@@ -1,0 +1,53 @@
+<div class="sm:col-span-2">
+  <span class="mb-1.5 block text-sm font-medium text-secondary">Diagnósticos</span>
+
+  <select
+    class="auth-input"
+    aria-label="Acrescentar diagnóstico"
+    [value]="''"
+    (change)="adicionar($any($event.target).value); $any($event.target).value = ''"
+  >
+    <option value="">Acrescentar diagnóstico…</option>
+    @for (item of disponiveis(); track item.code) {
+      <option [value]="item.code">{{ item.label }} ({{ item.code }})</option>
+    }
+  </select>
+
+  @if (selected().length > 0) {
+    <ul class="mt-3 space-y-2">
+      @for (escolhido of selected(); track escolhido.code) {
+        <li
+          class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-surface px-4 py-2.5"
+        >
+          <span class="text-sm">
+            <span class="font-medium text-primary">{{ escolhido.label }}</span>
+            <span class="ml-2 text-xs text-muted">{{ escolhido.code }}</span>
+          </span>
+
+          <span class="flex items-center gap-4">
+            <!-- Um principal por paciente: o banco garante com índice único, e o rádio
+                 é a forma de dizer qual, sem deixar a escolha ambígua na tela. -->
+            <label class="flex items-center gap-1.5 text-xs text-secondary">
+              <input
+                type="radio"
+                name="diagnostico-principal"
+                [checked]="escolhido.is_primary"
+                (change)="marcarPrincipal(escolhido.code)"
+              />
+              principal
+            </label>
+            <button
+              type="button"
+              class="text-xs font-semibold text-red-600 hover:underline"
+              (click)="remover(escolhido.code)"
+            >
+              Remover
+            </button>
+          </span>
+        </li>
+      }
+    </ul>
+  } @else {
+    <p class="mt-2 text-sm text-muted">Nenhum diagnóstico registrado.</p>
+  }
+</div>

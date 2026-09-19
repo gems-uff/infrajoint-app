@@ -1,0 +1,232 @@
+<main class="page-container py-8 text-ink-strong lg:py-10">
+  <header>
+    <h1 class="text-3xl font-bold tracking-tight text-primary sm:text-4xl">Análise Térmica</h1>
+    <p class="mt-2 max-w-2xl text-base text-muted">
+      Avaliação completa atrelada a um paciente. As etapas clínicas são opcionais, e o que for
+      preenchido é gravado no histórico ao finalizar.
+    </p>
+  </header>
+
+  <!-- Trilha de etapas -->
+  <nav class="mt-6 flex flex-wrap items-center gap-2" aria-label="Etapas da análise">
+    @for (
+      item of [
+        { id: 'patient', label: '1. Paciente' },
+        { id: 'body-map', label: '2. Mapa corporal' },
+        { id: 'analyzer', label: '3. Analisador' },
+      ];
+      track item.id
+    ) {
+      <button
+        type="button"
+        (click)="goTo($any(item.id))"
+        [disabled]="item.id !== 'patient' && !patient()"
+        [attr.aria-current]="step() === item.id ? 'step' : null"
+        class="cursor-pointer rounded-full px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+        [class.bg-primary]="step() === item.id"
+        [class.text-white]="step() === item.id"
+        [class.bg-brand-50]="step() !== item.id"
+        [class.text-secondary]="step() !== item.id"
+      >
+        {{ item.label }}
+      </button>
+    }
+  </nav>
+
+  @if (patient(); as chosen) {
+    <p class="mt-3 text-sm text-secondary">
+      Paciente: <span class="font-semibold text-primary">{{ chosen.full_name }}</span>
+      <button
+        type="button"
+        (click)="goTo('patient')"
+        class="ml-2 cursor-pointer text-xs font-semibold text-accent underline underline-offset-2"
+      >
+        trocar
+      </button>
+    </p>
+  }
+
+  <div class="mt-7">
+    @switch (step()) {
+      @case ('patient') {
+        <app-patient-step (selected)="onPatientSelected($event)" />
+      }
+      @case ('body-map') {
+        <app-body-map-step />
+      }
+    }
+  </div>
+
+  <!--
+    Etapa 3 fica FORA do @switch de propósito.
+
+    O @switch destrói o componente ao sair da etapa, e o estado do analisador vive
+    dentro dele: a sequência carregada, o alinhamento e as ROIs iriam junto. Como os
+    arquivos vieram do disco, voltar ao body map e retornar custaria reescolher a
+    pasta de ~100 MB e refazer o alinhamento inteiro.
+
+    Só monta depois que há paciente, para quem só quer o body map não pagar o
+    carregamento do analisador nem do modelo de mãos.
+
+    Já foi desmontado durante o envio, por suspeita de que a memória dele
+    atrapalhasse os uploads. Medido: não atrapalhava, o tempo somado dentro dos
+    PUTs ficou igual (1602s contra 1616s). A lentidão era limitação de rede
+    aplicada na aba do navegador. Como desmontar custava perder a sequência
+    carregada quando o envio falha, voltou a ficar montado.
+  -->
+  @if (patient()) {
+    <div [hidden]="step() !== 'analyzer'">
+      <app-image-analyzer-page [embedded]="true" />
+    </div>
+  }
+
+  <!-- Finalização -->
+  @if (patient() && step() !== 'patient') {
+    <section class="mt-8 rounded-2xl border border-black/5 bg-surface p-5 shadow-sm">
+      <h2 class="text-sm font-semibold uppercase tracking-wider text-secondary">
+        Finalizar análise
+      </h2>
+
+      <label for="motivo" class="mt-4 block text-xs font-medium text-secondary">
+        Motivo da consulta (opcional)
+      </label>
+      <!-- Travado depois de gravar: o motivo foi junto com a consulta, e não há PATCH
+           que o atualize. Editável, o campo aceitaria um texto que seria descartado
+           sem aviso. -->
+      <input
+        id="motivo"
+        type="text"
+        maxlength="300"
+        [value]="reason()"
+        (input)="reason.set($any($event.target).value)"
+        [disabled]="consultaSalva()"
+        placeholder="Ex.: reavaliação de atividade da doença"
+        class="auth-input mt-1 max-w-xl py-2 text-sm disabled:opacity-60"
+      />
+
+      <!-- Sem isto o envio de dezenas de MB fica num "Gravando…" opaco, e não há
+           como distinguir "está progredindo" de "travou". -->
+      @if (saving() && uploadTotal() > 0) {
+        <div class="mt-4 rounded-xl bg-brand-50 px-4 py-3">
+          <p class="text-sm font-semibold text-primary">
+            Enviando {{ uploadDone() }} de {{ uploadTotal() }} arquivos
+            <span class="font-normal text-secondary">
+              ({{ uploadMbDone() | number: '1.1-1' }} de {{ uploadMbTotal() | number: '1.1-1' }} MB)
+            </span>
+          </p>
+          <div class="mt-2 h-2 overflow-hidden rounded-full bg-white/70">
+            <div
+              class="h-full rounded-full bg-accent transition-[width] duration-200"
+              [style.width.%]="uploadTotal() ? (uploadDone() / uploadTotal()) * 100 : 0"
+            ></div>
+          </div>
+          @if (uploadLast(); as ultimo) {
+            <p class="mt-2 text-xs text-muted">Último enviado: {{ ultimo }}</p>
+          }
+        </div>
+      }
+
+      @if (uploadFailed().length > 0) {
+        <div class="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <p class="font-semibold">Estes arquivos não subiram:</p>
+          <ul class="mt-1 list-inside list-disc">
+            @for (falha of uploadFailed(); track falha) {
+              <li>{{ falha }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      @if (error(); as message) {
+        <p class="mt-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+          {{ message }}
+        </p>
+      }
+
+      <!-- As dicas abaixo ajudam a decidir O QUE gravar. Com a consulta já gravada não
+           há mais essa decisão: o que falta é o envio, e quem diz isso é a tarja de erro,
+           logo acima. Uma terceira caixa repetindo o mesmo era ruído.
+
+           Por que Finalizar some aqui: clicar antes de processar gravaria a consulta
+           e sairia da tela, levando junto a análise já carregada, sem aviso. -->
+      @if (consultaSalva()) {
+        <!-- sem dica: a tarja de erro e os botões já dizem o que resta -->
+      } @else if (step() === 'analyzer' && !analysisReady()) {
+        <p class="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-sm text-secondary">
+          Carregue os arquivos e processe a análise para poder finalizar.
+          <!-- A frase do body map só cabe se houver body map: dizer que "continua
+               guardado" o que nunca foi preenchido fazia parecer que havia algo. -->
+          @if (evaluatedCount() > 0) {
+            O mapa corporal que você já preencheu continua guardado.
+          }
+        </p>
+      } @else if (!hasFindings()) {
+        <p class="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-sm text-secondary">
+          Marque ao menos uma articulação no mapa corporal, ou faça a análise de imagem, para gravar
+          a consulta. Uma consulta sem nenhum dos dois não registraria nada.
+        </p>
+      }
+
+      <div class="mt-5 flex flex-wrap items-center gap-3">
+        @if (step() === 'body-map') {
+          <button
+            type="button"
+            (click)="goTo('analyzer')"
+            class="cursor-pointer rounded-lg border border-black/10 px-5 py-2.5 text-sm font-semibold text-primary hover:bg-brand-50"
+          >
+            Ir para o analisador
+          </button>
+        }
+        <!-- Com a consulta já gravada, o botão RETOMA em vez de criar. Antes ele
+             voltava ao estado inicial e o segundo clique nascia uma segunda consulta
+             com o mesmo body map, deixando a primeira órfã em 'uploading'. -->
+        @if (consultaSalva()) {
+          <button
+            type="button"
+            (click)="finish()"
+            [disabled]="!canFinish()"
+            class="cursor-pointer rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {{ saving() ? 'Enviando…' : 'Tentar enviar novamente' }}
+          </button>
+          <!-- Saída sem perder o que já foi gravado: a consulta e o body map estão no
+               banco, e o envio pode ser retomado depois pelo prontuário.
+
+               Só depois que o envio para. Durante o upload não há o que recuperar, e
+               oferecer a saída ali — ainda que desabilitada — é a mesma coisa que a
+               mensagem de recuperação que aparecia no meio do progresso. -->
+          @if (!saving()) {
+            <button
+              type="button"
+              (click)="verConsultaSalva()"
+              class="cursor-pointer rounded-lg px-4 py-2.5 text-sm font-semibold text-secondary underline underline-offset-2 hover:text-primary"
+            >
+              Ver a consulta salva
+            </button>
+          }
+        } @else if (canFinish() || step() !== 'analyzer') {
+          <button
+            type="button"
+            (click)="finish()"
+            [disabled]="!canFinish()"
+            class="cursor-pointer rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {{ saving() ? 'Gravando…' : 'Finalizar e gravar' }}
+          </button>
+        } @else {
+          <!-- Saída deliberada, para quem entrou no analisador e desistiu não ficar
+               preso. Só vale se houver body map: sem ele não há "sem análise de
+               imagem" a gravar, há consulta vazia. -->
+          <button
+            type="button"
+            (click)="finish()"
+            [disabled]="saving() || !hasFindings()"
+            class="cursor-pointer rounded-lg px-4 py-2.5 text-sm font-semibold text-secondary underline underline-offset-2 hover:text-primary disabled:opacity-50"
+          >
+            {{ saving() ? 'Gravando…' : 'Finalizar sem análise de imagem' }}
+          </button>
+        }
+      </div>
+    </section>
+  }
+</main>

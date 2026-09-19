@@ -1,0 +1,6 @@
+# O .gitignore da raiz já cobre .env*, .venv/, caches e artefatos de build.
+# Este arquivo existe para o que é só do backend.
+
+# Uploads e amostras locais, se alguém apontar o storage para o disco.
+/uploads/
+/tmp/

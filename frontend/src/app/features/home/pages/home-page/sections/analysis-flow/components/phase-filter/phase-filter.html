@@ -1,0 +1,7 @@
+<div class="mb-6 flex flex-wrap gap-2">
+  @for (filter of filters; track filter.value) {
+    <button type="button" [class]="buttonClasses(filter.value)" (click)="setFilter(filter.value)">
+      {{ filter.label }}
+    </button>
+  }
+</div>

@@ -1,0 +1,68 @@
+<div
+  [class]="containerClass()"
+  (dragover)="onDragOver($event)"
+  (dragleave)="onDragLeave()"
+  (drop)="onDrop($event)"
+>
+  <input
+    #fileInput
+    type="file"
+    [accept]="accept()"
+    class="sr-only"
+    (change)="onInputChange($event)"
+  />
+
+  @if (loading()) {
+    <div class="flex flex-col items-center gap-2 px-4 py-8 text-center">
+      <svg [lucideIcon]="'loader-circle'" class="h-7 w-7 animate-spin text-accent" aria-hidden="true"></svg>
+      <span class="text-sm font-medium text-primary">Carregando…</span>
+      <span class="text-xs text-muted">{{ title() }}</span>
+    </div>
+  } @else if (fileName(); as name) {
+    <div class="flex items-start gap-3 px-4 py-5">
+      <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+        <svg [lucideIcon]="'check'" class="h-5 w-5" aria-hidden="true"></svg>
+      </span>
+      <div class="min-w-0 flex-1">
+        <p class="text-sm font-semibold text-primary">{{ title() }}</p>
+        <p class="mt-0.5 truncate text-xs text-muted" [title]="name">{{ name }}</p>
+        @if (fileSize(); as size) {
+          <p class="text-[11px] text-gray-400">{{ size }}</p>
+        }
+        <button
+          type="button"
+          class="mt-2 inline-flex items-center gap-1 rounded-md text-xs font-medium text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          (click)="fileInput.click()"
+        >
+          <svg [lucideIcon]="'refresh-cw'" class="h-3 w-3" aria-hidden="true"></svg>
+          Trocar arquivo
+        </button>
+      </div>
+    </div>
+  } @else {
+    <button
+      type="button"
+      class="flex w-full flex-col items-center gap-1.5 px-4 py-8 text-center focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
+      (click)="fileInput.click()"
+      [attr.aria-label]="'Selecionar arquivo para ' + title()"
+    >
+      <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-accent">
+        <svg [lucideIcon]="'cloud-upload'" class="h-6 w-6" aria-hidden="true"></svg>
+      </span>
+      <span class="mt-1 text-sm font-semibold text-primary">{{ title() }}</span>
+      <span class="text-xs font-medium text-accent">Clique para selecionar um arquivo</span>
+      <span class="text-xs text-muted">ou arraste o arquivo para esta área</span>
+      <span class="mt-1 text-[11px] text-gray-400">{{ accepts() }}</span>
+    </button>
+  }
+
+  @if (error(); as err) {
+    <p
+      class="flex items-start gap-1.5 border-t border-red-100 bg-red-50 px-4 py-2 text-xs text-red-600"
+      role="alert"
+    >
+      <svg [lucideIcon]="'triangle-alert'" class="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true"></svg>
+      {{ err }}
+    </p>
+  }
+</div>

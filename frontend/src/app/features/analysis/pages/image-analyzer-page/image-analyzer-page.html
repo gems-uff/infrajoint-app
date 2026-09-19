@@ -1,0 +1,1378 @@
+<div class="text-ink-strong" [attr.role]="embedded() ? null : 'main'">
+  @if (analysisStarted() && ready() && rgbImage(); as rgb) {
+    <!-- ============================== Tela 2: Analisador ============================== -->
+    <div class="w-full px-4 py-8 sm:px-6 xl:px-8">
+      <header class="flex flex-wrap items-center justify-between gap-4">
+        <div class="min-w-0">
+          <h1 class="text-2xl font-bold tracking-tight text-primary">Analisador de imagens</h1>
+          @if (activeSequenceCapture(); as capture) {
+            <p class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+              <span class="inline-flex items-center gap-1.5" title="Sequência temporal carregada">
+                <svg [lucideIcon]="'images'" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></svg>
+                Sequência {{ sequenceService.sessionLabel() }}
+              </span>
+              <span class="inline-flex items-center gap-1.5 tabular-nums" title="Captura ativa na linha do tempo">
+                <svg [lucideIcon]="'thermometer'" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></svg>
+                {{ captureDisplayLabel(capture) }} · t = {{ formatSeconds(capture.timeSeconds) }}
+              </span>
+              <span>{{ sequenceService.captures().length }} capturas · intervalo {{ sequenceService.intervalSeconds() }} s</span>
+            </p>
+          } @else {
+            <p class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+              <span class="inline-flex items-center gap-1.5 truncate" title="Fotografia óptica carregada">
+                <svg [lucideIcon]="'image'" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></svg>
+                {{ rgbFileName() }}
+              </span>
+              <span class="inline-flex items-center gap-1.5 truncate" title="Matriz térmica (CSV) carregada">
+                <svg [lucideIcon]="'file-spreadsheet'" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></svg>
+                {{ csvFileName() }}
+              </span>
+              @if (jpegFileName(); as jpegName) {
+                <span class="inline-flex items-center gap-1.5 truncate" title="Imagem térmica carregada">
+                  <svg [lucideIcon]="'thermometer'" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></svg>
+                  {{ jpegName }}
+                </span>
+              }
+            </p>
+          }
+        </div>
+        <div class="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            class="inline-flex h-10 items-center gap-2 rounded-full border border-gray-200 px-4 text-sm font-medium text-primary transition-colors hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            (click)="openHelp()"
+            title="Como usar o analisador (abre o guia)"
+            aria-label="Abrir ajuda"
+          >
+            <svg [lucideIcon]="'circle-help'" class="h-4 w-4" aria-hidden="true"></svg>
+            Ajuda
+          </button>
+          <!--
+            Só na tela solta. Embutido, "Nova análise" não quer dizer nada: no fluxo
+            de Análise Térmica a análise é *desta* consulta, e voltar para a tela de
+            upload trocaria os arquivos que estão prestes a ser gravados. Na consulta
+            reaberta, pediria arquivos para uma análise que já aconteceu.
+          -->
+          @if (!embedded()) {
+            <button
+              type="button"
+              class="btn-secondary h-10 gap-2 pl-4 pr-5 text-sm"
+              (click)="newAnalysis()"
+              title="Voltar para a tela de upload e trocar os arquivos da análise"
+            >
+              <svg [lucideIcon]="'rotate-ccw'" class="h-4 w-4" aria-hidden="true"></svg>
+              Nova análise
+            </button>
+          }
+        </div>
+      </header>
+
+      @if (error(); as errorMessage) {
+        <div
+          class="mt-4 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+          role="alert"
+        >
+          <svg [lucideIcon]="'triangle-alert'" class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true"></svg>
+          <p class="flex-1">{{ errorMessage }}</p>
+          <button
+            type="button"
+            class="-my-1 -mr-1 shrink-0 rounded-md p-1 text-red-400 transition-colors hover:bg-red-100 hover:text-red-600"
+            (click)="dismissError()"
+            title="Dispensar esta mensagem"
+            aria-label="Dispensar mensagem de erro"
+          >
+            <svg [lucideIcon]="'x'" class="h-4 w-4" aria-hidden="true"></svg>
+          </button>
+        </div>
+      }
+
+      @if (aligning()) {
+        <div
+          class="mt-4 flex items-start gap-3 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700"
+          role="status"
+        >
+          <svg [lucideIcon]="'loader-circle'" class="mt-0.5 h-4 w-4 shrink-0 animate-spin" aria-hidden="true"></svg>
+          <p>Alinhando as imagens automaticamente…</p>
+        </div>
+      }
+
+      @if (info(); as infoMessage) {
+        <div
+          class="mt-4 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+          role="status"
+        >
+          <svg [lucideIcon]="'circle-check'" class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true"></svg>
+          <p class="flex-1">{{ infoMessage }}</p>
+          <button
+            type="button"
+            class="-my-1 -mr-1 shrink-0 rounded-md p-1 text-emerald-500 transition-colors hover:bg-emerald-100 hover:text-emerald-700"
+            (click)="dismissInfo()"
+            title="Dispensar esta mensagem"
+            aria-label="Dispensar mensagem"
+          >
+            <svg [lucideIcon]="'x'" class="h-4 w-4" aria-hidden="true"></svg>
+          </button>
+        </div>
+      }
+
+      <div class="mt-6 grid items-start gap-4 lg:grid-cols-[224px_minmax(0,1fr)]">
+        <!-- ---------- Painel esquerdo: ferramentas ---------- -->
+        <!--
+          `relative z-20` is load-bearing: `position: sticky` creates a stacking
+          context, so the panel's popovers are trapped inside it and would be
+          painted under the viewer column that follows in the DOM. Lifting the
+          whole panel above the viewer (and its z-10 busy overlay) is what lets
+          an explanation open over the canvas.
+        -->
+        <aside
+          class="relative z-20 space-y-5 rounded-2xl border border-gray-100 bg-white p-3 lg:sticky lg:top-6"
+          aria-label="Ferramentas da análise"
+        >
+          <!-- Visualização -->
+          <section aria-label="Visualização">
+            <h2 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+              <svg [lucideIcon]="'eye'" class="h-3.5 w-3.5" aria-hidden="true"></svg>
+              Visualização
+            </h2>
+            <div class="mt-3 space-y-4">
+              <div title="Controla o quanto a camada térmica aparece sobre a foto óptica">
+                <div class="flex items-center justify-between">
+                  <label for="overlay-alpha" class="text-sm font-medium text-primary">
+                    Opacidade da térmica
+                  </label>
+                  <span class="text-sm tabular-nums text-muted">{{ alphaPct() }}%</span>
+                </div>
+                <input
+                  id="overlay-alpha"
+                  type="range"
+                  min="0"
+                  max="100"
+                  [value]="alphaPct()"
+                  (input)="onAlphaInput($event)"
+                  class="mt-1.5 w-full accent-accent"
+                  aria-label="Opacidade da camada térmica"
+                  title="0% mostra só a foto óptica, 100% mostra só a imagem térmica"
+                />
+              </div>
+            </div>
+          </section>
+
+          <hr class="border-gray-100" />
+
+          <!-- Alinhamento -->
+          <section aria-label="Alinhamento">
+            <h2 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+              <svg [lucideIcon]="'scan-search'" class="h-3.5 w-3.5" aria-hidden="true"></svg>
+              Alinhamento
+            </h2>
+            <p class="mt-2 text-xs leading-6 text-muted">
+              Método ativo:
+              @if (aligned()) {
+                <span class="ml-1 inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 align-middle font-medium text-brand-500">
+                  <svg [lucideIcon]="'circle-check'" class="h-3 w-3 shrink-0" aria-hidden="true"></svg>
+                  {{ alignmentLabel() }}
+                </span>
+              } @else {
+                <span class="ml-1 align-middle font-medium text-amber-600">nenhum</span>
+              }
+            </p>
+            @if (overlapPercent(); as overlap) {
+              <p class="relative mt-1 flex items-center gap-1 text-xs leading-6 text-muted">
+                <span>
+                  Sobreposição das silhuetas:
+                  <strong class="font-medium text-primary">{{ overlap }}</strong>
+                </span>
+                <button
+                  type="button"
+                  class="inline-flex shrink-0 rounded-full p-0.5 text-gray-400 transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
+                  [class.text-accent]="openInfo() === 'overlap'"
+                  (click)="toggleInfo('overlap')"
+                  (keydown.escape)="closeInfo()"
+                  [attr.aria-expanded]="openInfo() === 'overlap'"
+                  title="O que este percentual significa"
+                  aria-label="O que este percentual significa"
+                >
+                  <svg [lucideIcon]="'info'" class="h-3.5 w-3.5" aria-hidden="true"></svg>
+                </button>
+
+                @if (openInfo() === 'overlap') {
+                  <span
+                    class="absolute left-0 top-full z-20 mt-1 block w-72 rounded-xl border border-gray-200 bg-white p-3 text-xs leading-5 text-muted shadow-[0_18px_40px_rgba(15,23,42,0.18)]"
+                    role="note"
+                  >
+                    <strong class="block text-primary">Sobreposição das silhuetas</strong>
+                    <span class="mt-1 block">{{ OVERLAP_HELP }}</span>
+                  </span>
+                }
+              </p>
+            }
+            @if (correctionCells(); as correction) {
+              <p class="relative mt-1 flex items-center gap-1 text-xs leading-6 text-muted">
+                <span>
+                  Correção aplicada pelos marcadores:
+                  <strong class="font-medium text-primary">{{ correction }} células</strong>
+                </span>
+                <button
+                  type="button"
+                  class="inline-flex shrink-0 rounded-full p-0.5 text-gray-400 transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
+                  [class.text-accent]="openInfo() === 'correction'"
+                  (click)="toggleInfo('correction')"
+                  (keydown.escape)="closeInfo()"
+                  [attr.aria-expanded]="openInfo() === 'correction'"
+                  title="Como esta magnitude foi calculada"
+                  aria-label="Como esta magnitude foi calculada"
+                >
+                  <svg [lucideIcon]="'info'" class="h-3.5 w-3.5" aria-hidden="true"></svg>
+                </button>
+
+                @if (openInfo() === 'correction' && correctionDetails(); as details) {
+                  <!--
+                    Wider than the sidebar on purpose: the per-marker figures sit
+                    side by side instead of stacking, which keeps the panel from
+                    running off the bottom of the viewport. It overhangs to the
+                    right, over the viewer, and falls back to one column when
+                    there is no room for two.
+                  -->
+                  <span
+                    class="absolute left-0 top-full z-20 mt-1 block w-[32rem] max-w-[calc(100vw-3rem)] rounded-xl border border-gray-200 bg-white p-3 text-xs leading-5 text-muted shadow-[0_18px_40px_rgba(15,23,42,0.18)]"
+                    role="note"
+                  >
+                    <strong class="block text-primary">Correção indicada pelos marcadores</strong>
+                    <span class="mt-1 block">
+                      Magnitude média do deslocamento observado nos dois marcadores entre a posição
+                      prevista pelo alinhamento inicial e a posição detectada.
+                    </span>
+
+                    <span class="mt-2 grid gap-x-4 gap-y-2 border-t border-gray-100 pt-2 sm:grid-cols-2">
+                      @for (marker of details.markers; track marker.label) {
+                        <span class="block">
+                          <strong class="block text-primary">{{ marker.label }}</strong>
+                          <span class="mt-0.5 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2">
+                            <span>Previsto</span>
+                            <span>X = {{ marker.predictedX }} · Y = {{ marker.predictedY }}</span>
+                            <span>Detectado</span>
+                            <span>X = {{ marker.detectedX }} · Y = {{ marker.detectedY }}</span>
+                            <span>Deslocamento</span>
+                            <span>ΔX = {{ marker.deltaX }} · ΔY = {{ marker.deltaY }}</span>
+                            <span>Magnitude</span>
+                            <span>
+                              √(ΔX² + ΔY²) =
+                              <strong class="font-medium text-primary">{{ marker.length }}</strong>
+                            </span>
+                          </span>
+                        </span>
+                      }
+                    </span>
+
+                    <span class="mt-2 grid gap-x-4 gap-y-2 border-t border-gray-100 pt-2 sm:grid-cols-2">
+                      <span class="block">
+                        <strong class="block text-primary">Magnitude média</strong>
+                        <span class="mt-0.5 block">
+                          {{ details.meanFormula }} =
+                          <strong class="font-medium text-primary">{{ details.mean }} células</strong>
+                        </span>
+                      </span>
+
+                      <span class="block">
+                        <strong class="block text-primary">Decomposição da correção</strong>
+                        <span class="mt-0.5 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2">
+                          <span>Deslocamento</span>
+                          <span>X = {{ details.shiftX }} · Y = {{ details.shiftY }} células</span>
+                          <span>Escala</span>
+                          <span>{{ details.scale }}</span>
+                          <span>Rotação</span>
+                          <span>{{ details.rotation }}</span>
+                        </span>
+                      </span>
+                    </span>
+
+                    <span class="mt-2 block border-t border-gray-100 pt-2">
+                      A magnitude média resume a distância que os dois marcadores precisaram ser
+                      corrigidos em relação às posições previstas pelo alinhamento inicial. Essa
+                      correção pode resultar de deslocamento, rotação e escala, que são as
+                      componentes da mesma transformação e não parcelas somadas na magnitude.
+                    </span>
+                  </span>
+                }
+              </p>
+            }
+            <div class="mt-3 space-y-2" role="group" aria-label="Método de alinhamento">
+              <button
+                type="button"
+                class="filter-pill w-full disabled:cursor-not-allowed disabled:opacity-50"
+                [class.filter-pill-active]="mode() === 'auto' && !calibrating()"
+                [attr.aria-pressed]="mode() === 'auto' && !calibrating()"
+                [disabled]="aligning()"
+                (click)="autoAlign()"
+                title="Alinha sozinho pelas silhuetas das mãos e marcadores. Clique novamente para refazer."
+              >
+                <span class="inline-flex items-center gap-1.5">
+                  <svg [lucideIcon]="'sparkles'" class="h-3.5 w-3.5" aria-hidden="true"></svg>
+                  {{ mode() === 'auto' && aligned() ? 'Refazer automático' : 'Alinhar automático' }}
+                </span>
+              </button>
+              <button
+                type="button"
+                class="filter-pill w-full"
+                [class.filter-pill-active]="mode() === 'manual' || calibrating()"
+                [attr.aria-pressed]="mode() === 'manual' || calibrating()"
+                (click)="toggleCalibration()"
+                title="Alinhe manualmente clicando em pontos correspondentes nas duas imagens (mín. 3 pares)"
+              >
+                <span class="inline-flex items-center gap-1.5">
+                  <svg [lucideIcon]="'crosshair'" class="h-3.5 w-3.5" aria-hidden="true"></svg>
+                  Calibração manual
+                </span>
+              </button>
+
+              @if (calibrating()) {
+                <div class="rounded-xl bg-slate-50 p-3">
+                  <p class="text-xs leading-5 text-muted">
+                    <span class="whitespace-nowrap">
+                      Óptica: <strong class="text-primary">{{ rgbPoints().length }}</strong>
+                    </span>
+                    ·
+                    <span class="whitespace-nowrap">
+                      Térmica: <strong class="text-primary">{{ thermalPointsDisplay().length }}</strong>
+                    </span>
+                    ·
+                    <span class="whitespace-nowrap">
+                      Pares: <strong class="text-primary">{{ pairedCount() }}</strong>
+                    </span>
+                  </p>
+                  <div class="mt-2 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      class="filter-pill px-3 py-1.5 text-xs"
+                      (click)="undoLastPoint()"
+                      title="Remover o último ponto marcado"
+                    >
+                      Desfazer
+                    </button>
+                    <button
+                      type="button"
+                      class="filter-pill px-3 py-1.5 text-xs"
+                      (click)="clearPoints()"
+                      title="Apagar todos os pontos marcados"
+                    >
+                      Limpar pontos
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn-primary mt-2 w-full px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                    [disabled]="!canApplyCalibration()"
+                    (click)="applyCalibration()"
+                    [title]="
+                      canApplyCalibration()
+                        ? 'Calcular o alinhamento a partir dos pares marcados'
+                        : 'Marque pelo menos 3 pares de pontos para aplicar'
+                    "
+                  >
+                    Aplicar calibração
+                  </button>
+                </div>
+              }
+            </div>
+          </section>
+
+          <hr class="border-gray-100" />
+
+          <!-- ROIs manuais -->
+          <section aria-label="Ferramentas de ROI">
+            <h2 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+              <svg [lucideIcon]="'circle-dashed'" class="h-3.5 w-3.5" aria-hidden="true"></svg>
+              ROIs manuais
+            </h2>
+            <div
+              role="toolbar"
+              aria-label="Formato da ROI manual"
+              class="mt-3 flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-100 p-1"
+            >
+              <button
+                type="button"
+                class="flex h-10 w-10 items-center justify-center rounded-lg transition-colors"
+                [class]="
+                  shape() === 'circle'
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-white hover:text-primary'
+                "
+                [attr.aria-pressed]="shape() === 'circle'"
+                (click)="setShape('circle')"
+                title="Desenhar ROIs em formato circular"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  class="h-[22px] w-[22px]"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="8" stroke-dasharray="3.9 2.4" />
+                </svg>
+                <span class="sr-only">Seleção circular</span>
+              </button>
+              <button
+                type="button"
+                class="flex h-10 w-10 items-center justify-center rounded-lg transition-colors"
+                [class]="
+                  shape() === 'ellipse'
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-white hover:text-primary'
+                "
+                [attr.aria-pressed]="shape() === 'ellipse'"
+                (click)="setShape('ellipse')"
+                title="Desenhar ROIs em formato elíptico"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  class="h-[22px] w-[22px]"
+                  aria-hidden="true"
+                >
+                  <ellipse cx="12" cy="12" rx="9" ry="6" stroke-dasharray="3.8 2.2" />
+                </svg>
+                <span class="sr-only">Seleção elíptica</span>
+              </button>
+            </div>
+            <p class="mt-2 text-xs text-muted">
+              {{ shape() === 'circle' ? 'Formato circular ativo' : 'Formato elíptico ativo' }},
+              arraste sobre a imagem para desenhar uma ROI.
+            </p>
+            <button
+              type="button"
+              class="filter-pill mt-3 w-full disabled:cursor-not-allowed disabled:opacity-50"
+              [disabled]="rois().length === 0"
+              (click)="clearRois()"
+              title="Remover todas as ROIs desenhadas manualmente"
+            >
+              <span class="inline-flex items-center gap-1.5">
+                <svg [lucideIcon]="'eraser'" class="h-3.5 w-3.5" aria-hidden="true"></svg>
+                Limpar ROIs manuais
+              </span>
+            </button>
+          </section>
+
+          <hr class="border-gray-100" />
+
+          <!-- Articulações -->
+          <section aria-label="Articulações">
+            <h2 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+              <svg [lucideIcon]="'hand'" class="h-3.5 w-3.5" aria-hidden="true"></svg>
+              ROIs articulares
+            </h2>
+            <div class="mt-3 space-y-3">
+              <button
+                type="button"
+                class="btn-primary w-full gap-2 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="loadingJoints() || !aligned()"
+                (click)="detectJoints()"
+                [title]="
+                  !aligned()
+                    ? 'Faça o alinhamento primeiro para posicionar as ROIs articulares'
+                    : 'Detecta as mãos e posiciona automaticamente as 22 ROIs das articulações'
+                "
+              >
+                @if (loadingJoints()) {
+                  <svg [lucideIcon]="'loader-circle'" class="h-4 w-4 animate-spin" aria-hidden="true"></svg>
+                  Detectando…
+                } @else {
+                  <svg [lucideIcon]="'scan-search'" class="h-4 w-4" aria-hidden="true"></svg>
+                  {{ jointsDetected() ? 'Detectar novamente' : 'Detectar articulações' }}
+                }
+              </button>
+
+              @if (jointRows().length > 0) {
+                <div>
+                  <div
+                    class="flex items-center justify-between"
+                    title="Escala as ROIs articulares em relação ao tamanho padrão"
+                  >
+                    <label for="joint-size" class="text-sm font-medium text-primary">
+                      Tamanho das ROIs
+                    </label>
+                    <span class="text-sm tabular-nums text-muted">{{ jointSizePct() }}%</span>
+                  </div>
+                  <input
+                    id="joint-size"
+                    type="range"
+                    min="50"
+                    max="150"
+                    step="5"
+                    [value]="jointSizePct()"
+                    (input)="onJointSizeInput($event)"
+                    class="mt-1.5 w-full accent-accent"
+                    aria-label="Tamanho das ROIs articulares"
+                    title="Escala as ROIs não ajustadas manualmente (50% a 150% do padrão)"
+                  />
+                  <p class="mt-2 text-xs text-muted">
+                    Aplica-se às ROIs não ajustadas. Clique em uma ROI articular (na imagem ou na
+                    tabela) para selecioná-la e arraste para movê-la ou use a alça do canto para
+                    redimensioná-la. As setas movem, +/− redimensionam e Delete restaura a ROI.
+                  </p>
+
+                  <div class="mt-4">
+                    <div class="flex items-center justify-between gap-2">
+                      <span id="ignore-bg-label" class="text-sm font-medium text-primary">
+                        Ignorar fundo
+                      </span>
+                      <button
+                        type="button"
+                        role="switch"
+                        [attr.aria-checked]="ignoreBackground()"
+                        aria-labelledby="ignore-bg-label"
+                        (click)="toggleIgnoreBackground()"
+                        class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                        [class.bg-accent]="ignoreBackground()"
+                        [class.bg-slate-300]="!ignoreBackground()"
+                        [title]="
+                          ignoreBackground()
+                            ? 'Medindo só a pele. Clique para incluir o fundo'
+                            : 'Medindo a região inteira. Clique para descartar o fundo'
+                        "
+                      >
+                        <span
+                          class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+                          [class.translate-x-4]="ignoreBackground()"
+                          [class.translate-x-0.5]="!ignoreBackground()"
+                        ></span>
+                      </button>
+                    </div>
+                    <p class="mt-1 text-xs text-muted">
+                      {{
+                        ignoreBackground()
+                          ? 'Medindo só a pele; o fundo (tapete frio) é descartado.'
+                          : 'Medindo a região inteira, incluindo o fundo.'
+                      }}
+                    </p>
+                  </div>
+
+                  @if (editedJointCount() > 0) {
+                    <button
+                      type="button"
+                      class="filter-pill mt-3 w-full"
+                      (click)="resetAllJoints()"
+                      title="Desfazer todos os ajustes manuais e voltar às ROIs detectadas"
+                    >
+                      <span class="inline-flex items-center gap-1.5">
+                        <svg [lucideIcon]="'rotate-ccw'" class="h-3.5 w-3.5" aria-hidden="true"></svg>
+                        Restaurar ROIs ({{ editedJointCount() }} ajustada(s))
+                      </span>
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          </section>
+        </aside>
+
+        <!-- ---------- Área central: imagem ---------- -->
+        <section class="min-w-0" aria-label="Imagem da análise">
+          @if (sequenceActive() && !calibrating()) {
+            <div
+              class="mb-3 inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-100 p-1"
+              role="tablist"
+              aria-label="Visualização da sequência"
+            >
+              <button
+                type="button"
+                role="tab"
+                class="flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors"
+                [class]="viewerTab() === 'image' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-primary'"
+                [attr.aria-selected]="viewerTab() === 'image'"
+                (click)="setViewerTab('image')"
+                title="Sobreposição da captura ativa com as ROIs"
+              >
+                <svg [lucideIcon]="'image'" class="h-4 w-4" aria-hidden="true"></svg>
+                Imagem
+              </button>
+              <button
+                type="button"
+                role="tab"
+                class="flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors"
+                [class]="viewerTab() === 'curves' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-primary'"
+                [attr.aria-selected]="viewerTab() === 'curves'"
+                (click)="setViewerTab('curves')"
+                title="Curva de Reaquecimento: temperatura das articulações ao longo do tempo"
+              >
+                <svg [lucideIcon]="'chart-no-axes-combined'" class="h-4 w-4" aria-hidden="true"></svg>
+                Curva de Reaquecimento
+              </button>
+            </div>
+          }
+
+          @if (calibrating() && thermalDisplay(); as display) {
+            <div class="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6">
+              <h2 class="text-lg font-semibold text-primary">Calibração manual de marcadores</h2>
+              <p class="mt-1 text-sm text-muted">
+                Clique nos pontos correspondentes na imagem óptica (verde) e na térmica (azul), na
+                mesma ordem. São necessários pelo menos 3 pares. Depois clique em
+                <strong class="font-medium text-primary">Aplicar calibração</strong> no painel de
+                alinhamento à esquerda.
+              </p>
+
+              <div class="mt-4 grid gap-4 xl:grid-cols-2">
+                <div>
+                  <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Óptica</p>
+                  <app-marker-picker
+                    [image]="rgb"
+                    [imageWidth]="rgb.naturalWidth"
+                    [imageHeight]="rgb.naturalHeight"
+                    [points]="rgbPoints()"
+                    color="#22c55e"
+                    (pointAdded)="onRgbPointAdded($event)"
+                  />
+                </div>
+                <div>
+                  <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Térmica</p>
+                  <app-marker-picker
+                    [image]="display.canvas"
+                    [imageWidth]="display.canvas.width"
+                    [imageHeight]="display.canvas.height"
+                    [points]="thermalPointsDisplay()"
+                    color="#0ea5e9"
+                    (pointAdded)="onThermalPointAdded($event)"
+                  />
+                </div>
+              </div>
+            </div>
+          } @else if (sequenceActive() && viewerTab() === 'curves') {
+            <!-- Curva de Reaquecimento -->
+            <div class="rounded-2xl border border-gray-100 bg-white p-5">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <h2 class="text-lg font-semibold text-primary">Curva de Reaquecimento</h2>
+                <p class="text-xs text-muted">
+                  Só capturas dinâmicas · clique na curva para ir à captura
+                </p>
+              </div>
+
+              <div class="mt-3 flex flex-wrap items-center gap-x-6 gap-y-3">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wide text-muted">Articulações</p>
+                  <div class="mt-1.5 flex flex-wrap gap-1.5" role="group" aria-label="Articulações na curva">
+                    @for (def of jointDefs; track def.landmarkId) {
+                      <button
+                        type="button"
+                        class="filter-pill px-3 py-1 text-xs"
+                        [class.filter-pill-active]="curveJointIds().includes(def.landmarkId)"
+                        [attr.aria-pressed]="curveJointIds().includes(def.landmarkId)"
+                        (click)="toggleCurveJoint(def.landmarkId)"
+                        [title]="'Mostrar/ocultar ' + def.label + ' na curva (ambas as mãos)'"
+                      >
+                        {{ def.label }}
+                      </button>
+                    }
+                  </div>
+                </div>
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wide text-muted">Estatística</p>
+                  <div class="mt-1.5 flex gap-1.5" role="group" aria-label="Estatística da curva">
+                    @for (stat of curveStatistics; track stat[0]) {
+                      <button
+                        type="button"
+                        class="filter-pill px-3 py-1 text-xs"
+                        [class.filter-pill-active]="curveStatistic() === stat[0]"
+                        [attr.aria-pressed]="curveStatistic() === stat[0]"
+                        (click)="setCurveStatistic(stat[0])"
+                        [title]="'Traçar a temperatura ' + stat[1].toLowerCase() + ' de cada ROI'"
+                      >
+                        {{ stat[1] }}
+                      </button>
+                    }
+                  </div>
+                </div>
+                <p class="ml-auto text-xs text-muted">
+                  <span class="mr-3 inline-flex items-center gap-1.5">
+                    <span class="h-2.5 w-2.5 rounded-full bg-cyan-500"></span> Mão esquerda
+                  </span>
+                  <span class="inline-flex items-center gap-1.5">
+                    <span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span> Mão direita
+                  </span>
+                </p>
+              </div>
+
+              <div class="mt-4">
+                <app-rewarming-chart
+                  [series]="rewarmingSeries()"
+                  [activeTime]="activeCaptureTime()"
+                  (timeSelected)="onCurveTimeSelected($event)"
+                />
+              </div>
+              @if (activeSequenceCapture()?.kind === 'baseline') {
+                <p class="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-xs text-muted">
+                  A captura <strong class="font-medium text-primary">Base</strong> está
+                  selecionada, e ela não aparece nesta curva: foi registrada antes do
+                  resfriamento, fora do eixo de tempo. As temperaturas dela estão na aba
+                  <strong class="font-medium text-primary">Imagem</strong>.
+                </p>
+              }
+              <p class="mt-3 text-xs text-muted">
+                Cada ponto é uma captura dinâmica, com as ROIs reposicionadas pelos
+                landmarks de cada imagem: a cor indica a mão, e o tracejado, a articulação.
+                Falhas de alinhamento ou detecção aparecem como lacunas. O eixo conta a
+                partir do fim do resfriamento e começa na primeira captura dinâmica, porque
+                a câmera só dispara {{ sequenceService.intervalSeconds() }} s depois que os
+                ventiladores param: não existe captura em 0:00. A basal fica de fora, por
+                ser registrada antes do resfriamento. As temperaturas dela estão na aba
+                Imagem, com a captura Base selecionada.
+              </p>
+            </div>
+          } @else {
+            <div class="relative">
+              <app-overlay-canvas
+                [rgb]="rgb"
+                [thermal]="thermalDisplay()?.canvas ?? null"
+                [thermalToRgb]="thermalToRgb()"
+                [alpha]="alpha()"
+                [shape]="shape()"
+                [jointRois]="overlayJoints()"
+                [(rois)]="rois"
+                [(selectedId)]="selectedRoiId"
+                [(selectedJointKey)]="selectedJointKey"
+                (jointEdited)="onJointEdited($event)"
+                (jointReset)="resetJoint($event)"
+              />
+              @if (aligning() || loadingJoints()) {
+                <div
+                  class="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/60 backdrop-blur-[2px]"
+                  role="status"
+                >
+                  <div
+                    class="flex items-center gap-3 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-primary shadow-[0_10px_30px_rgba(27,58,87,0.18)]"
+                  >
+                    <svg
+                      [lucideIcon]="'loader-circle'"
+                      class="h-5 w-5 animate-spin text-accent"
+                      aria-hidden="true"
+                    ></svg>
+                    {{ aligning() ? 'Alinhando imagens…' : 'Detectando articulações…' }}
+                  </div>
+                </div>
+              }
+            </div>
+            <p class="mt-2 text-xs text-muted">
+              Arraste em uma área vazia para desenhar uma nova ROI, pode criar quantas quiser.
+              Clique em uma para selecioná-la: arraste por dentro (ou pela alça central) para
+              movê-la e pela alça do canto para redimensioná-la. Com uma ROI selecionada, as setas
+              movem, +/− redimensionam e Delete remove.
+            </p>
+          }
+
+          @if (sequenceActive() && !calibrating()) {
+            <!-- Linha do tempo da sequência -->
+            <div class="mt-4">
+              <app-timeline
+                [captures]="sequenceService.captures()"
+                [activeIndex]="activeCaptureIndex()"
+                (activeIndexChange)="onCaptureIndexChange($event)"
+              />
+            </div>
+          }
+
+          @if (!sequenceActive() || viewerTab() === 'image') {
+          <!-- Resultados das ROIs -->
+          <div class="mt-4 rounded-2xl border border-gray-100 bg-white p-5">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <h2 class="text-lg font-semibold text-primary">Temperaturas nas ROIs manuais</h2>
+              <p class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+                <span>
+                  Alinhamento ativo:
+                  <strong class="font-medium text-primary">{{ alignmentLabel() }}</strong>
+                </span>
+                <span>
+                  Pares calibrados:
+                  <strong class="font-medium text-primary">
+                    {{ manualMatrix() ? pairedCount() : '—' }}
+                  </strong>
+                </span>
+                @if (roiResults().length > 0) {
+                  <span>{{ roiResults().length }} ROI(s)</span>
+                }
+              </p>
+            </div>
+
+            @if (roiResults().length > 0) {
+              <ul class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                @for (res of roiResults(); track res.id) {
+                  <li
+                    role="button"
+                    tabindex="0"
+                    class="cursor-pointer rounded-xl border p-3 transition-colors hover:border-emerald-300 hover:bg-emerald-50/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    [class.border-emerald-400]="res.id === selectedRoiId()"
+                    [class.bg-emerald-50]="res.id === selectedRoiId()"
+                    [class.border-gray-100]="res.id !== selectedRoiId()"
+                    (click)="selectRoi(res.id)"
+                    (keydown.enter)="selectRoi(res.id)"
+                    (keydown.space)="selectRoi(res.id); $event.preventDefault()"
+                    [title]="'Selecionar a ROI ' + res.label + ' na imagem'"
+                  >
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="text-sm font-semibold text-primary">ROI {{ res.label }}</span>
+                      <button
+                        type="button"
+                        class="rounded-md p-1 text-gray-400 hover:bg-red-50 hover:text-red-500"
+                        (click)="deleteRoi(res.id); $event.stopPropagation()"
+                        [attr.aria-label]="'Remover ROI ' + res.label"
+                      >
+                        <svg [lucideIcon]="'trash-2'" class="h-4 w-4" aria-hidden="true"></svg>
+                      </button>
+                    </div>
+                    <dl class="mt-2 grid grid-cols-4 gap-2 text-center">
+                      <div>
+                        <dt class="text-[10px] uppercase tracking-wide text-gray-400">Média</dt>
+                        <dd class="mt-0.5 text-sm font-semibold tabular-nums text-primary">{{ res.mean }}</dd>
+                      </div>
+                      <div>
+                        <dt class="text-[10px] uppercase tracking-wide text-gray-400">Mediana</dt>
+                        <dd class="mt-0.5 text-sm font-semibold tabular-nums text-primary">{{ res.median }}</dd>
+                      </div>
+                      <div>
+                        <dt class="text-[10px] uppercase tracking-wide text-gray-400">Máx.</dt>
+                        <dd class="mt-0.5 text-sm font-semibold tabular-nums text-primary">{{ res.max }}</dd>
+                      </div>
+                      <div>
+                        <dt class="text-[10px] uppercase tracking-wide text-gray-400">Mín.</dt>
+                        <dd class="mt-0.5 text-sm font-semibold tabular-nums text-primary">{{ res.min }}</dd>
+                      </div>
+                    </dl>
+                    @if (!res.valid) {
+                      <p class="mt-2 text-xs text-red-500">
+                        Caiu fora da matriz térmica, verifique o alinhamento.
+                      </p>
+                    } @else {
+                      <p class="mt-2 text-[11px] text-muted">
+                        Centro na matriz: ({{ res.csvX }}, {{ res.csvY }})
+                      </p>
+                    }
+                  </li>
+                }
+              </ul>
+            } @else {
+              <div class="mt-2 flex flex-col items-center gap-2 py-8 text-center">
+                <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-50 text-accent">
+                  <svg [lucideIcon]="'circle-dashed'" class="h-6 w-6" aria-hidden="true"></svg>
+                </span>
+                <p class="text-sm font-medium text-primary">Nenhuma ROI manual ainda</p>
+                <p class="max-w-sm text-xs text-muted">
+                  Arraste sobre a imagem para desenhar uma região de interesse (ROI). A média,
+                  mediana, máxima e mínima da temperatura aparecem aqui.
+                </p>
+              </div>
+            }
+          </div>
+
+          <!-- Temperaturas por articulação -->
+          @if (jointRows().length > 0) {
+            <div class="mt-6 rounded-2xl border border-gray-100 bg-white p-5 sm:p-6">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <h2 class="text-lg font-semibold text-primary">Temperaturas por articulação</h2>
+                <p class="text-xs text-muted">Valores em °C · Mín. / Méd. / Máx. por lado</p>
+              </div>
+              <div class="mt-3 overflow-x-auto">
+                <table class="w-full min-w-[680px] text-sm">
+                  <thead>
+                    <tr class="text-left text-xs uppercase tracking-wide text-muted">
+                      <th rowspan="2" class="py-2 pr-4 align-bottom font-semibold">Articulação</th>
+                      <th colspan="3" class="border-b border-gray-100 py-2 pr-4 font-semibold">
+                        <span class="inline-flex items-center gap-1.5">
+                          <span class="h-2.5 w-2.5 rounded-full bg-cyan-400"></span> Mão esquerda
+                        </span>
+                      </th>
+                      <th colspan="3" class="border-b border-l border-gray-100 py-2 pl-4 font-semibold">
+                        <span class="inline-flex items-center gap-1.5">
+                          <span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span> Mão direita
+                        </span>
+                      </th>
+                    </tr>
+                    <tr class="border-b border-gray-100 text-left text-[11px] uppercase tracking-wide text-muted">
+                      <th class="py-1.5 pr-4 font-medium">Mín.</th>
+                      <th class="py-1.5 pr-4 font-medium">Méd.</th>
+                      <th class="py-1.5 pr-4 font-medium">Máx.</th>
+                      <th class="border-l border-gray-100 py-1.5 pl-4 pr-4 font-medium">Mín.</th>
+                      <th class="py-1.5 pr-4 font-medium">Méd.</th>
+                      <th class="py-1.5 font-medium">Máx.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of jointRows(); track row.label) {
+                      <tr class="border-b border-gray-50 last:border-0">
+                        <td class="py-2 pr-4 font-medium text-primary">{{ row.label }}</td>
+                        @for (cell of [row.left, row.right]; track $index) {
+                          <td
+                            class="py-1.5 pr-4 tabular-nums"
+                            [class.border-l]="!$first"
+                            [class.border-gray-100]="!$first"
+                            [class.pl-4]="!$first"
+                            [class.text-ink-strong]="!cell.unreliable"
+                            [class.text-amber-600]="cell.unreliable"
+                          >
+                            {{ cell.min }}
+                          </td>
+                          <td class="py-1.5 pr-4">
+                            <div class="flex items-center gap-1">
+                              <button
+                                type="button"
+                                class="rounded-md px-1.5 py-0.5 tabular-nums transition-colors enabled:hover:bg-slate-100 disabled:cursor-default"
+                                [class.bg-brand-50]="cell.key !== null && cell.key === selectedJointKey()"
+                                [class.ring-1]="cell.key !== null && cell.key === selectedJointKey()"
+                                [class.ring-accent]="cell.key !== null && cell.key === selectedJointKey()"
+                                [class.font-semibold]="cell.key !== null && cell.key === selectedJointKey()"
+                                [class.text-ink-strong]="!cell.unreliable"
+                                [class.text-amber-600]="cell.unreliable"
+                                [disabled]="cell.key === null"
+                                (click)="selectJoint(cell.key)"
+                                [title]="
+                                  cell.key === null
+                                    ? ''
+                                    : cell.unreliable
+                                      ? 'Pouca pele dentro da ROI, valor não confiável. Clique para selecionar e reposicionar.'
+                                      : 'Clique para selecionar e reposicionar esta ROI'
+                                "
+                              >
+                                {{ cell.mean }}@if (cell.unreliable) {<span aria-hidden="true"> ⚠</span>}@if (cell.edited) {<span class="text-accent" aria-label="ROI ajustada manualmente"> •</span>}
+                              </button>
+                              @if (cell.edited) {
+                                <button
+                                  type="button"
+                                  class="rounded p-0.5 text-gray-400 hover:bg-slate-100 hover:text-primary"
+                                  (click)="resetJoint(cell.key)"
+                                  [attr.aria-label]="'Restaurar ROI ' + row.label"
+                                  title="Restaurar esta ROI para a posição detectada"
+                                >
+                                  <svg [lucideIcon]="'rotate-ccw'" class="h-3 w-3" aria-hidden="true"></svg>
+                                </button>
+                              }
+                            </div>
+                          </td>
+                          <td
+                            class="py-1.5 pr-4 tabular-nums"
+                            [class.pr-0]="$last"
+                            [class.text-ink-strong]="!cell.unreliable"
+                            [class.text-amber-600]="cell.unreliable"
+                          >
+                            {{ cell.max }}
+                          </td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              @if (unreliableJointCount() > 0) {
+                <p class="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  ⚠ {{ unreliableJointCount() }} articulação(ões) com pouca pele dentro da ROI
+                  (dedo fino ou fora do enquadramento), os valores marcados são pouco confiáveis.
+                  Reduzir o tamanho das ROIs pode ajudar.
+                </p>
+              }
+              <p class="mt-3 text-xs text-muted">
+                ROIs em células da matriz térmica (punho: elipse 27×17; demais articulações:
+                círculo r=10, escaláveis acima), posicionadas pelos landmarks do MediaPipe e
+                mapeadas pelo alinhamento ativo.
+                @if (ignoreBackground()) {
+                  Com <strong class="font-medium text-primary">Ignorar fundo</strong> ativo, células
+                  cuja posição correspondente na foto óptica não é pele (fundo) são descartadas da
+                  estatística. Dedos frios continuam contando, pois o critério é a cor, não a
+                  temperatura.
+                } @else {
+                  <strong class="font-medium text-primary">Ignorar fundo</strong> está desativado:
+                  a estatística considera toda a área da ROI, inclusive o fundo (tapete frio), que
+                  reduz a média e a mínima.
+                }
+              </p>
+            </div>
+          }
+
+          @if (jointRows().length === 0) {
+            <div class="mt-6 rounded-2xl border border-gray-100 bg-white p-5 sm:p-6">
+              <h2 class="text-lg font-semibold text-primary">Temperaturas por articulação</h2>
+              <div class="mt-2 flex flex-col items-center gap-2 py-8 text-center">
+                <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-50 text-accent">
+                  <svg [lucideIcon]="'hand'" class="h-6 w-6" aria-hidden="true"></svg>
+                </span>
+                <p class="text-sm font-medium text-primary">Nenhuma articulação detectada ainda</p>
+                <p class="max-w-md text-xs text-muted">
+                  Use <strong class="font-medium text-primary">Detectar articulações</strong> no
+                  painel à esquerda para posicionar automaticamente as 22 ROIs (Punho, MCP e IFP de
+                  cada mão) e ler a temperatura de cada uma.
+                  @if (!aligned()) {
+                    <span class="mt-1 block text-amber-600">
+                      Faça o alinhamento das imagens primeiro.
+                    </span>
+                  }
+                </p>
+              </div>
+            </div>
+          }
+          }
+        </section>
+
+      </div>
+    </div>
+  } @else if (fromSaved()) {
+    <!--
+      Consulta gravada carregando: a tela de upload não se aplica aqui, e mostrá-la
+      enquanto a hidratação não termina fazia parecer que abrir uma consulta pedia
+      arquivos de novo.
+    -->
+    <div class="flex min-h-[60vh] items-center justify-center">
+      <div
+        class="flex items-center gap-3 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-primary shadow-[0_10px_30px_rgba(27,58,87,0.18)]"
+        role="status"
+      >
+        <svg
+          [lucideIcon]="'loader-circle'"
+          class="h-5 w-5 animate-spin text-accent"
+          aria-hidden="true"
+        ></svg>
+        Carregando análise gravada…
+      </div>
+    </div>
+  } @else {
+    <!-- ============================== Tela 1: Upload ============================== -->
+    <div class="mx-auto w-full max-w-4xl px-4 py-16 sm:px-6">
+      <div class="flex items-start justify-between gap-4">
+        <h1 class="text-3xl font-bold tracking-tight text-primary sm:text-4xl">
+          Analisador de imagens
+        </h1>
+        <button
+          type="button"
+          class="mt-1 inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-gray-200 px-4 text-sm font-medium text-primary transition-colors hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          (click)="openHelp()"
+          title="Como usar o analisador (abre o guia)"
+          aria-label="Abrir ajuda"
+        >
+          <svg [lucideIcon]="'circle-help'" class="h-4 w-4" aria-hidden="true"></svg>
+          Ajuda
+        </button>
+      </div>
+      <p class="mt-3 text-base text-muted">
+        @if (uploadMode() === 'single') {
+          Carregue uma fotografia óptica, a matriz térmica (CSV) e a imagem térmica para alinhar e
+          sobrepor as imagens, desenhar regiões de interesse (ROIs) e visualizar as temperaturas
+          correspondentes.
+        } @else {
+          Importe a pasta de uma sessão do protocolo (baseline + capturas dinâmicas) para navegar
+          pelo reaquecimento na linha do tempo e traçar a Curva de Reaquecimento das articulações.
+        }
+      </p>
+
+      <!-- Tipo de análise -->
+      <div
+        class="mt-6 inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-100 p-1"
+        role="tablist"
+        aria-label="Tipo de análise"
+      >
+        <button
+          type="button"
+          role="tab"
+          class="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+          [class]="uploadMode() === 'single' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-primary'"
+          [attr.aria-selected]="uploadMode() === 'single'"
+          (click)="setUploadMode('single')"
+          title="Analisar uma única captura (três arquivos)"
+        >
+          <svg [lucideIcon]="'image'" class="h-4 w-4" aria-hidden="true"></svg>
+          Análise individual
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+          [class]="uploadMode() === 'sequence' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-primary'"
+          [attr.aria-selected]="uploadMode() === 'sequence'"
+          (click)="setUploadMode('sequence')"
+          title="Importar a sequência completa do protocolo (baseline + dinâmicas)"
+        >
+          <svg [lucideIcon]="'chart-no-axes-combined'" class="h-4 w-4" aria-hidden="true"></svg>
+          Sequência temporal
+        </button>
+      </div>
+
+      @if (uploadMode() === 'sequence') {
+        <!-- Importação em lote da sequência -->
+        <section class="mt-6" aria-label="Importação da sequência">
+          <app-sequence-import (enter)="enterSequenceAnalysis()" />
+        </section>
+      } @else {
+      <!-- Uploads -->
+      <section class="mt-8 grid gap-4 sm:grid-cols-3" aria-label="Arquivos da análise">
+        <app-upload-card
+          title="Imagem óptica"
+          accepts="JPEG ou PNG"
+          accept="image/*"
+          [fileName]="rgbFileName()"
+          [fileSize]="rgbFileSize()"
+          [loading]="loadingRgb()"
+          [error]="rgbError()"
+          (fileSelected)="loadRgb($event)"
+        />
+        <app-upload-card
+          title="Matriz térmica (CSV)"
+          accepts="Arquivo CSV"
+          accept=".csv,text/csv"
+          [fileName]="csvFileName()"
+          [fileSize]="csvFileSize()"
+          [loading]="loadingCsv()"
+          [error]="csvError()"
+          (fileSelected)="loadCsv($event)"
+        />
+        <app-upload-card
+          title="Imagem térmica"
+          accepts="JPEG ou PNG"
+          accept="image/*"
+          [fileName]="jpegFileName()"
+          [fileSize]="jpegFileSize()"
+          [loading]="loadingJpeg()"
+          [error]="jpegError()"
+          (fileSelected)="loadJpeg($event)"
+        />
+      </section>
+
+      <!-- Como funciona -->
+      <section
+        class="mt-8 rounded-2xl border border-gray-100 bg-white/70 px-6 py-8"
+        aria-label="Como funciona a análise"
+      >
+        <ol class="flex flex-wrap items-center justify-center gap-x-2 gap-y-6">
+          <li class="flex w-24 flex-col items-center gap-2 text-center">
+            <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-accent">
+              <svg [lucideIcon]="'images'" class="h-6 w-6" aria-hidden="true"></svg>
+            </span>
+            <span class="text-xs font-medium text-primary">Imagens + Matriz térmica</span>
+          </li>
+          <li aria-hidden="true" class="text-gray-300">
+            <svg [lucideIcon]="'chevron-right'" class="h-5 w-5"></svg>
+          </li>
+          <li class="flex w-24 flex-col items-center gap-2 text-center">
+            <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-accent">
+              <svg [lucideIcon]="'scan-search'" class="h-6 w-6" aria-hidden="true"></svg>
+            </span>
+            <span class="text-xs font-medium text-primary">Alinhamento</span>
+          </li>
+          <li aria-hidden="true" class="text-gray-300">
+            <svg [lucideIcon]="'chevron-right'" class="h-5 w-5"></svg>
+          </li>
+          <li class="flex w-24 flex-col items-center gap-2 text-center">
+            <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-accent">
+              <svg [lucideIcon]="'layers'" class="h-6 w-6" aria-hidden="true"></svg>
+            </span>
+            <span class="text-xs font-medium text-primary">Sobreposição</span>
+          </li>
+          <li aria-hidden="true" class="text-gray-300">
+            <svg [lucideIcon]="'chevron-right'" class="h-5 w-5"></svg>
+          </li>
+          <li class="flex w-24 flex-col items-center gap-2 text-center">
+            <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-accent">
+              <svg [lucideIcon]="'circle-dashed'" class="h-6 w-6" aria-hidden="true"></svg>
+            </span>
+            <span class="text-xs font-medium text-primary">ROIs</span>
+          </li>
+          <li aria-hidden="true" class="text-gray-300">
+            <svg [lucideIcon]="'chevron-right'" class="h-5 w-5"></svg>
+          </li>
+          <li class="flex w-24 flex-col items-center gap-2 text-center">
+            <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-accent">
+              <svg [lucideIcon]="'thermometer'" class="h-6 w-6" aria-hidden="true"></svg>
+            </span>
+            <span class="text-xs font-medium text-primary">Temperaturas</span>
+          </li>
+        </ol>
+        <p class="mx-auto mt-6 flex max-w-xl items-start justify-center gap-2 text-center text-sm text-muted">
+          <svg [lucideIcon]="'shield-check'" class="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true"></svg>
+          <span>
+            Todo o processamento é realizado localmente no navegador.
+Nenhuma imagem ou dado é enviado para servidores.
+          </span>
+        </p>
+      </section>
+
+      <!-- CTA -->
+      <div class="mt-8 flex flex-col items-center gap-3">
+        <button
+          type="button"
+          class="btn-primary gap-2 py-3 pl-8 pr-7 text-base disabled:cursor-not-allowed disabled:opacity-40"
+          [class]="
+            ready() ? 'shadow-[0_14px_40px_rgba(50,181,254,0.35)] hover:-translate-y-0.5' : ''
+          "
+          [disabled]="!ready()"
+          (click)="startAnalysis()"
+          [title]="
+            ready()
+              ? 'Abrir o analisador com os arquivos carregados'
+              : 'Carregue os três arquivos para habilitar'
+          "
+        >
+          Iniciar análise
+          <svg [lucideIcon]="'arrow-right'" class="h-5 w-5" aria-hidden="true"></svg>
+        </button>
+        @if (!ready()) {
+          <p class="text-xs text-muted">
+            Carregue a imagem óptica, a matriz térmica (CSV) e a imagem térmica para iniciar.
+          </p>
+        }
+      </div>
+      }
+    </div>
+  }
+
+  <!-- ============================== Modal de ajuda ============================== -->
+  @if (helpOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        class="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px]"
+        aria-hidden="true"
+        (click)="closeHelp()"
+      ></div>
+      <div
+        #helpDialog
+        class="relative z-10 flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-[0_30px_80px_rgba(15,23,42,0.35)]"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="help-title"
+        tabindex="-1"
+        (keydown.escape)="closeHelp()"
+        (document:keydown.escape)="closeHelp()"
+      >
+        <header class="flex items-center justify-between gap-4 border-b border-gray-100 px-6 py-4">
+          <h2 id="help-title" class="flex items-center gap-2 text-lg font-bold text-primary">
+            <svg [lucideIcon]="'circle-help'" class="h-5 w-5 text-accent" aria-hidden="true"></svg>
+            Como usar o analisador
+          </h2>
+          <button
+            type="button"
+            class="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-slate-100 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            (click)="closeHelp()"
+            title="Fechar"
+            aria-label="Fechar ajuda"
+          >
+            <svg [lucideIcon]="'x'" class="h-5 w-5" aria-hidden="true"></svg>
+          </button>
+        </header>
+
+        <div class="space-y-5 overflow-y-auto px-6 py-5 text-sm text-ink-strong">
+          <p class="text-muted">
+            Este módulo sobrepõe uma imagem térmica a uma foto óptica das mãos e mede a temperatura
+            em regiões de interesse (ROIs). Siga os passos abaixo.
+          </p>
+
+          <section class="flex gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-accent">
+              <svg [lucideIcon]="'images'" class="h-5 w-5" aria-hidden="true"></svg>
+            </span>
+            <div>
+              <h3 class="font-semibold text-primary">1. Carregue os três arquivos</h3>
+              <p class="mt-0.5 text-muted">
+                <strong class="text-primary">Imagem óptica</strong> (foto comum das mãos),
+                <strong class="text-primary">matriz térmica (CSV)</strong> exportada pela câmera e
+                <strong class="text-primary">imagem térmica</strong> (o JPEG colorido). Depois clique
+                em <strong class="text-primary">Iniciar análise</strong>.
+              </p>
+            </div>
+          </section>
+
+          <section class="flex gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-accent">
+              <svg [lucideIcon]="'scan-search'" class="h-5 w-5" aria-hidden="true"></svg>
+            </span>
+            <div>
+              <h3 class="font-semibold text-primary">2. Alinhe as imagens</h3>
+              <p class="mt-0.5 text-muted">
+                O alinhamento <strong class="text-primary">automático</strong> roda sozinho ao
+                iniciar. Se não ficar bom, use a <strong class="text-primary">calibração manual</strong>:
+                clique em pelo menos 3 pares de pontos correspondentes na imagem óptica e na térmica
+                e aplique. Ajuste a <strong class="text-primary">opacidade</strong> para conferir a
+                sobreposição.
+              </p>
+            </div>
+          </section>
+
+          <section class="flex gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-accent">
+              <svg [lucideIcon]="'circle-dashed'" class="h-5 w-5" aria-hidden="true"></svg>
+            </span>
+            <div>
+              <h3 class="font-semibold text-primary">3. ROIs manuais</h3>
+              <p class="mt-0.5 text-muted">
+                Escolha o formato (círculo ou elipse) e <strong class="text-primary">arraste</strong>
+                sobre a imagem para desenhar. Clique em uma ROI para selecioná-la, arraste-a para
+                mover e use a alça do canto para redimensionar. Com uma ROI selecionada,
+                <strong class="text-primary">setas</strong> movem, <strong class="text-primary">+/−</strong>
+                redimensionam e <strong class="text-primary">Delete</strong> remove.
+              </p>
+            </div>
+          </section>
+
+          <section class="flex gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-accent">
+              <svg [lucideIcon]="'hand'" class="h-5 w-5" aria-hidden="true"></svg>
+            </span>
+            <div>
+              <h3 class="font-semibold text-primary">4. ROIs articulares (automáticas)</h3>
+              <p class="mt-0.5 text-muted">
+                <strong class="text-primary">Detectar articulações</strong> posiciona 22 ROIs
+                (Punho, MCP e IFP de cada mão) pelos landmarks das mãos. Cada uma pode ser movida e
+                redimensionada como uma ROI manual. <strong class="text-primary">Delete</strong> (ou o
+                botão restaurar) devolve a ROI à posição detectada. O controle
+                <strong class="text-primary">Tamanho das ROIs</strong> escala as não ajustadas.
+              </p>
+            </div>
+          </section>
+
+          <section class="flex gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-accent">
+              <svg [lucideIcon]="'thermometer'" class="h-5 w-5" aria-hidden="true"></svg>
+            </span>
+            <div>
+              <h3 class="font-semibold text-primary">5. Leia as temperaturas</h3>
+              <p class="mt-0.5 text-muted">
+                As tabelas mostram mínima, média e máxima em °C. Um <span class="text-amber-600">⚠</span>
+                indica ROI com pouca pele (valor pouco confiável). Cores: ciano = mão esquerda,
+                âmbar = mão direita.
+              </p>
+            </div>
+          </section>
+
+          <section class="flex gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-accent">
+              <svg [lucideIcon]="'chart-no-axes-combined'" class="h-5 w-5" aria-hidden="true"></svg>
+            </span>
+            <div>
+              <h3 class="font-semibold text-primary">6. Sequência temporal (protocolo)</h3>
+              <p class="mt-0.5 text-muted">
+                Na tela inicial, escolha <strong class="text-primary">Sequência temporal</strong> e
+                importe a pasta da sessão (baseline Est + capturas Din). Cada captura é alinhada e
+                tem as articulações re-detectadas. Navegue pela
+                <strong class="text-primary">linha do tempo</strong> (▶, setas, miniaturas) e abra a
+                <strong class="text-primary">Curva de Reaquecimento</strong> para acompanhar a
+                temperatura das articulações ao longo do tempo. A curva traça as capturas
+                dinâmicas. A basal, anterior ao resfriamento, fica na aba Imagem.
+              </p>
+            </div>
+          </section>
+
+          <p class="flex items-start gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs text-muted">
+            <svg [lucideIcon]="'shield-check'" class="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true"></svg>
+            <span>Todo o processamento é feito localmente no navegador, nenhuma imagem ou dado é enviado a servidores.</span>
+          </p>
+        </div>
+
+        <footer class="flex justify-end border-t border-gray-100 px-6 py-3">
+          <button
+            type="button"
+            class="btn-primary px-5 py-2 text-sm"
+            (click)="closeHelp()"
+            title="Fechar o guia"
+          >
+            Entendi
+          </button>
+        </footer>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,15 @@
+<article class="platform-feature-card bg-white ring-1 ring-brand-100">
+  <div [ngClass]="iconShellClasses(feature().variant)">
+    <svg [lucideIcon]="feature().icon" class="h-11 w-11" aria-hidden="true" />
+  </div>
+
+  <h3
+    class="mt-11 max-w-full break-words text-xl font-semibold leading-snug text-primary [overflow-wrap:anywhere] xl:text-[1.05rem] 2xl:text-xl"
+  >
+    {{ feature().title }}
+  </h3>
+
+  <p class="mt-5 text-base leading-7 text-secondary">
+    {{ feature().description }}
+  </p>
+</article>

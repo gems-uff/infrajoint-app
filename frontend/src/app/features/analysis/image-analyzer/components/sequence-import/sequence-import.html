@@ -1,0 +1,327 @@
+@switch (sequence.status()) {
+  @case ('idle') {
+    <!-- Dropzone: pick or drop the session folder -->
+    <div
+      class="relative overflow-hidden rounded-2xl border-2 bg-white transition-colors"
+      [class]="dragging() ? 'border-dashed border-accent bg-brand-50/60' : 'border-dashed border-gray-200 hover:border-accent/60 hover:bg-brand-50/30'"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave()"
+      (drop)="onDrop($event)"
+    >
+      <input
+        #folderInput
+        type="file"
+        webkitdirectory
+        multiple
+        class="sr-only"
+        (change)="onFilesSelected($event)"
+      />
+      <input
+        #filesInput
+        type="file"
+        multiple
+        accept="image/jpeg,.csv,text/csv"
+        class="sr-only"
+        (change)="onFilesSelected($event)"
+      />
+      <button
+        type="button"
+        class="flex w-full flex-col items-center gap-1.5 px-4 pb-4 pt-10 text-center focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
+        (click)="folderInput.click()"
+        title="Selecionar a pasta da sessão de captura (ex.: V051)"
+      >
+        <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-accent">
+          <svg [lucideIcon]="'images'" class="h-6 w-6" aria-hidden="true"></svg>
+        </span>
+        <span class="mt-1 text-sm font-semibold text-primary">Pasta da sessão de captura</span>
+        <span class="text-xs font-medium text-accent">Clique para selecionar a pasta</span>
+        <span class="text-xs text-muted">ou arraste a pasta (ex.: V051) para esta área</span>
+        <span class="mt-1 text-[11px] text-gray-400">
+          Imagens ópticas (_DAR), térmicas (_IR) e matrizes CSV · baseline (Est) + dinâmicas (Din)
+        </span>
+        <span class="text-[11px] text-gray-400">
+          Também aceita a nomenclatura antiga, com a superfície de apoio no nome (ex.: V014_T1_E_Din01)
+        </span>
+      </button>
+      <div class="border-t border-gray-100 px-4 py-3 text-center">
+        <button
+          type="button"
+          class="text-xs font-medium text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          (click)="filesInput.click()"
+          title="Selecionar imagens e matrizes avulsas, em uma ou várias seleções"
+        >
+          Prefere selecionar os arquivos avulsos? Clique aqui
+        </button>
+        <p class="mt-0.5 text-[11px] text-gray-400">
+          As capturas são reconhecidas pelo nome do arquivo. Você pode adicionar as imagens e as
+          matrizes em seleções separadas.
+        </p>
+      </div>
+    </div>
+    <p class="mt-3 flex items-start gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs text-muted">
+      <svg [lucideIcon]="'shield-check'" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true"></svg>
+      <span>
+        Ao selecionar a pasta, o navegador exibirá um aviso de segurança perguntando se deseja
+        "enviar" os arquivos. É apenas a permissão de leitura local: nada é enviado a servidores,
+        todo o processamento acontece no seu navegador.
+      </span>
+    </p>
+    @if (sequence.error(); as err) {
+      <p
+        class="mt-3 flex items-start gap-1.5 rounded-xl border border-red-100 bg-red-50 px-4 py-2 text-xs text-red-600"
+        role="alert"
+      >
+        <svg [lucideIcon]="'triangle-alert'" class="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true"></svg>
+        {{ err }}
+      </p>
+    }
+  }
+
+  @case ('review') {
+    <!-- Conference: what was recognized, before processing -->
+    <div class="rounded-2xl border border-gray-100 bg-white p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-lg font-semibold text-primary">
+          Sequência {{ sequence.sessionLabel() }}
+        </h2>
+        <div class="flex flex-wrap gap-2">
+          <input
+            #moreFilesInput
+            type="file"
+            multiple
+            accept="image/jpeg,.csv,text/csv"
+            class="sr-only"
+            (change)="onFilesSelected($event, true)"
+          />
+          <button
+            type="button"
+            class="filter-pill px-3 py-1.5 text-xs"
+            (click)="moreFilesInput.click()"
+            title="Adicionar imagens ou matrizes que faltam (juntam-se aos arquivos já reconhecidos)"
+          >
+            <span class="inline-flex items-center gap-1.5">
+              <svg [lucideIcon]="'cloud-upload'" class="h-3.5 w-3.5" aria-hidden="true"></svg>
+              Adicionar arquivos
+            </span>
+          </button>
+          <button
+            type="button"
+            class="filter-pill px-3 py-1.5 text-xs"
+            (click)="sequence.reset()"
+            title="Descartar esta seleção e começar de novo"
+          >
+            Nova seleção
+          </button>
+        </div>
+      </div>
+
+      @if (sequence.reviews().length > 1) {
+        <label class="mt-3 block text-xs text-muted">
+          Mais de uma sessão encontrada. Escolha qual analisar:
+          <select
+            class="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-ink-strong"
+            (change)="onReviewSelected($event)"
+          >
+            @for (review of sequence.reviews(); track $index) {
+              <option [value]="$index" [selected]="$index === sequence.selectedReviewIndex()">
+                {{ review.subject }}_{{ review.trial }} ({{ review.captures.length }} capturas)
+              </option>
+            }
+          </select>
+        </label>
+      }
+
+      <p class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+        <span>
+          <strong class="text-primary">{{ completeCount() }}</strong> captura(s) completa(s)
+        </span>
+        @if (incompleteCount() > 0) {
+          <span class="text-amber-600">
+            {{ incompleteCount() }} incompleta(s), serão puladas. Use "Adicionar arquivos" para
+            completar o que falta
+          </span>
+        }
+        @if (sequence.selectedReview(); as review) {
+          @if (review.missingIndexes.length > 0) {
+            <span class="text-amber-600">Índices ausentes: {{ review.missingIndexes.join(', ') }}</span>
+          }
+          @if (review.ignoredLegacy > 0) {
+            <span
+              title="Nomenclatura antiga: as capturas sobre EVA + papel e sobre madeira, e a Din00 (mesmo instante da Est), não fazem parte do protocolo atual"
+            >
+              {{ review.ignoredLegacy }} arquivo(s) da nomenclatura antiga descartado(s)
+            </span>
+          }
+        }
+      </p>
+      @if (completeCount() === 0) {
+        <p class="mt-2 rounded-lg bg-sky-50 px-3 py-2 text-xs text-sky-700">
+          Seleção parcial reconhecida. Continue com
+          <strong class="font-medium">Adicionar arquivos</strong> até que cada captura tenha a
+          imagem óptica, a térmica e a matriz. Aí o processamento é liberado.
+        </p>
+      } @else if (!hasBaseline()) {
+        <p class="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          ⚠ Baseline (Est) não encontrada: a análise ficará sem a temperatura de repouso, e o
+          relatório vai comparar o desfecho com a primeira captura dinâmica. A curva de
+          reaquecimento não é afetada, porque traça só as dinâmicas.
+        </p>
+      }
+
+      <div class="mt-3 rounded-xl border border-gray-100">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-left text-[11px] uppercase tracking-wide text-muted">
+            <tr>
+              <th class="px-3 py-2 font-medium">Captura</th>
+              <th class="px-3 py-2 font-medium" title="Fase do protocolo e tempo desde o início do reaquecimento">
+                Fase / Reaquecimento
+              </th>
+              <th class="px-3 py-2 font-medium">Óptica</th>
+              <th class="px-3 py-2 font-medium">Térmica</th>
+              <th class="px-3 py-2 font-medium">Matriz</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (capture of sequence.selectedReview()?.captures ?? []; track capture.label) {
+              <tr class="border-t border-gray-50" [class.opacity-60]="!isComplete(capture)">
+                <td class="px-3 py-1.5 font-medium text-primary">
+                  {{ capture.kind === 'baseline' ? 'Base (Est)' : capture.label }}
+                </td>
+                <td class="px-3 py-1.5 tabular-nums text-muted">
+                  @if (capture.kind === 'baseline') {
+                    Repouso
+                  } @else {
+                    {{ captureTime(capture.kind, capture.index) }}
+                  }
+                </td>
+                @for (file of [capture.optical, capture.thermal, capture.matrix]; track $index) {
+                  <td class="px-3 py-1.5">
+                    @if (file) {
+                      <svg [lucideIcon]="'check'" class="h-4 w-4 text-emerald-500" aria-hidden="true"></svg>
+                      <span class="sr-only">presente</span>
+                    } @else {
+                      <span class="text-xs text-red-500">faltando</span>
+                    }
+                  </td>
+                }
+              </tr>
+              @if (capture.kind === 'baseline') {
+                <!-- Cooling phase of the protocol: fans on, no captures -->
+                <tr class="border-t border-gray-50 bg-sky-50/60">
+                  <td colspan="5" class="px-3 py-1.5 text-center text-xs text-sky-700">
+                    <span class="inline-flex items-center gap-1.5">
+                      <svg [lucideIcon]="'wind'" class="h-3.5 w-3.5" aria-hidden="true"></svg>
+                      Resfriamento: ventiladores por 2 minutos, sem capturas
+                    </span>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="mt-2 text-xs text-muted">
+        A baseline (Est) registra a temperatura de repouso, antes do resfriamento. As capturas Din
+        registram o reaquecimento após os ventiladores. Os tempos contam a partir do início dessa
+        fase, em intervalos de {{ sequence.intervalSeconds() }} s.
+      </p>
+
+      <div class="mt-4 flex flex-wrap items-end justify-between gap-4">
+        <label class="text-sm font-medium text-primary">
+          Intervalo entre capturas (s)
+          <input
+            type="number"
+            min="1"
+            step="1"
+            [value]="sequence.intervalSeconds()"
+            (input)="onIntervalInput($event)"
+            class="mt-1 block w-32 rounded-xl border border-gray-200 px-3 py-2 text-sm tabular-nums text-ink-strong"
+            title="Segundos entre as capturas dinâmicas, contados do fim do resfriamento"
+          />
+        </label>
+        <button
+          type="button"
+          class="btn-primary gap-2 px-6 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+          [disabled]="completeCount() === 0"
+          (click)="process()"
+          [title]="
+            completeCount() === 0
+              ? 'Complete pelo menos uma captura (óptica + térmica + matriz) para processar'
+              : 'Alinhar e detectar as articulações de cada captura'
+          "
+        >
+          Processar {{ completeCount() }} captura(s)
+          <svg [lucideIcon]="'arrow-right'" class="h-4 w-4" aria-hidden="true"></svg>
+        </button>
+      </div>
+    </div>
+  }
+
+  @case ('processing') {
+    <div class="rounded-2xl border border-gray-100 bg-white p-6 text-center">
+      <!-- Plain div spinner: compositor-driven, keeps spinning while the
+           per-capture pipeline blocks the main thread (SVG spinners freeze). -->
+      <div
+        class="mx-auto h-8 w-8 animate-spin rounded-full border-[3px] border-slate-200 border-t-accent will-change-transform"
+        role="status"
+        aria-label="Processando"
+      ></div>
+      @if (sequence.progress(); as p) {
+        <p class="mt-3 text-sm font-medium text-primary">
+          Processando {{ p.done + 1 }} de {{ p.total }} ({{ p.label }})
+        </p>
+        <div
+          class="mx-auto mt-3 h-2 w-full max-w-md overflow-hidden rounded-full bg-slate-100"
+          role="progressbar"
+          [attr.aria-valuenow]="progressPct()"
+          aria-valuemin="0"
+          aria-valuemax="100"
+        >
+          <div class="h-full rounded-full bg-accent transition-[width]" [style.width.%]="progressPct()"></div>
+        </div>
+      }
+      <p class="mt-3 text-xs text-muted">
+        Alinhando imagens e detectando articulações de cada captura, tudo localmente no navegador.
+      </p>
+      <button type="button" class="filter-pill mt-4 px-4 py-1.5 text-xs" (click)="sequence.cancel()">
+        Cancelar
+      </button>
+    </div>
+  }
+
+  @case ('ready') {
+    <div class="rounded-2xl border border-gray-100 bg-white p-6">
+      <div class="flex items-start gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+          <svg [lucideIcon]="'check'" class="h-5 w-5" aria-hidden="true"></svg>
+        </span>
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-semibold text-primary">
+            Sequência {{ sequence.sessionLabel() }} processada
+          </p>
+          <p class="mt-0.5 text-xs text-muted">
+            {{ sequence.captures().length }} captura(s) · intervalo de
+            {{ sequence.intervalSeconds() }} s
+            @if (issueCount() > 0) {
+              <span class="text-amber-600"> · {{ issueCount() }} com problema(s)</span>
+            }
+          </p>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button type="button" class="btn-primary gap-2 px-5 py-2 text-sm" (click)="enter.emit()">
+              Continuar análise
+              <svg [lucideIcon]="'arrow-right'" class="h-4 w-4" aria-hidden="true"></svg>
+            </button>
+            <button
+              type="button"
+              class="filter-pill px-4 py-2 text-sm"
+              (click)="sequence.reset()"
+              title="Descartar esta sequência e importar outra"
+            >
+              Nova importação
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+}

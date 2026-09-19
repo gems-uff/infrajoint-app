@@ -1,0 +1,327 @@
+<main class="page-container py-16 text-ink-strong">
+  <a
+    routerLink="/pacientes"
+    class="inline-flex items-center text-sm font-medium text-accent hover:underline"
+  >
+    <svg [lucideIcon]="'arrow-left'" class="mr-1.5 h-4 w-4" aria-hidden="true"></svg>
+    Voltar para pacientes
+  </a>
+
+  @if (error()) {
+    <p
+      role="alert"
+      class="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+    >
+      {{ error() }}
+    </p>
+  }
+
+  @if (loading()) {
+    <p class="empty-state mt-10">Carregando…</p>
+  } @else if (patient(); as detail) {
+    <div class="mt-6 flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight text-primary sm:text-4xl">
+          {{ detail.full_name }}
+        </h1>
+        <p class="mt-2 text-base text-muted">
+          Nascimento {{ detail.birth_date | date: 'dd/MM/yyyy' }}
+          @if (sexLabel(detail.sex); as label) {
+            · {{ label }}
+          }
+        </p>
+        <!-- Só vem preenchido em prontuário alheio: do acervo de pesquisa, para o
+             pesquisador, ou de qualquer médico, para o admin. Esta tela tem o botão de
+             excluir, que leva o histórico clínico inteiro por cascata: saber de quem é o
+             prontuário é o que separa uma decisão de um acidente. -->
+        @if (detail.owner_name) {
+          <p
+            class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 text-sm font-medium text-secondary"
+          >
+            <svg [lucideIcon]="'stethoscope'" class="h-4 w-4" aria-hidden="true"></svg>
+            Paciente de {{ detail.owner_name }}
+          </p>
+        }
+        <!-- Quem editou por último, quando não foi quem está lendo. Num acervo
+             compartilhado, é o que explica um cadastro que mudou sozinho. -->
+        @if (detail.editor_name) {
+          <p class="mt-2 text-sm text-muted">
+            Última edição por {{ detail.editor_name }}
+          </p>
+        }
+      </div>
+
+      <div class="flex gap-3">
+        <!-- Cada botão pergunta ao campo que corresponde à policy que o recusaria:
+             `can_edit` a `patients_update`, `can_delete` a `patients_delete`. Deduzir
+             os dois de `owner_name` funcionava enquanto "é de outra pessoa" implicava
+             "não posso mexer" — o acervo de pesquisa desfez essa implicação, e as duas
+             respostas passaram a divergir. O admin lê e apaga sem editar; o
+             pesquisador edita o acervo do par sem apagar. -->
+        @if (detail.can_edit) {
+          <button type="button" class="btn-secondary h-11 px-6 text-sm" (click)="toggleEditing()">
+            {{ editing() ? 'Cancelar' : 'Editar' }}
+          </button>
+        }
+        @if (detail.can_delete) {
+          <button
+            type="button"
+            class="inline-flex h-11 items-center justify-center rounded-full border border-red-200 bg-red-50 px-6 text-sm font-semibold text-red-600 transition-colors hover:bg-red-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400"
+            (click)="toggleConfirmDelete()"
+          >
+            <svg [lucideIcon]="'trash-2'" class="mr-2 h-4 w-4" aria-hidden="true"></svg>
+            Excluir
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (confirmingDelete()) {
+      <section
+        role="alertdialog"
+        aria-labelledby="titulo-exclusao"
+        class="mt-6 rounded-2xl border border-red-200 bg-red-50 p-6"
+      >
+        <h2 id="titulo-exclusao" class="text-lg font-semibold text-red-800">
+          Excluir {{ detail.full_name }}?
+        </h2>
+
+        <!-- Dizer exatamente o que será destruído importa mais que perguntar
+             "tem certeza": as consultas somem por cascata e não há como desfazer. -->
+        <p class="mt-2 text-sm text-red-700">
+          @if (encounters().length === 0) {
+            Este paciente não tem consultas registradas.
+          } @else if (encounters().length === 1) {
+            <strong>1 consulta</strong> registrada será apagada junto, com todas as análises dela.
+          } @else {
+            <strong>{{ encounters().length }} consultas</strong> registradas serão apagadas junto,
+            com todas as análises delas.
+          }
+          Esta ação não pode ser desfeita.
+        </p>
+
+        <div class="mt-5 flex flex-wrap gap-3">
+          <button
+            type="button"
+            class="inline-flex h-11 items-center justify-center rounded-full bg-red-600 px-6 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
+            [disabled]="deleting()"
+            (click)="confirmDelete()"
+          >
+            {{ deleting() ? 'Excluindo…' : 'Sim, excluir definitivamente' }}
+          </button>
+          <button
+            type="button"
+            class="btn-secondary h-11 px-6 text-sm"
+            [disabled]="deleting()"
+            (click)="toggleConfirmDelete()"
+          >
+            Cancelar
+          </button>
+        </div>
+      </section>
+    }
+
+    @if (editing()) {
+      <form
+        [formGroup]="patientForm"
+        (ngSubmit)="savePatient()"
+        class="mt-6 rounded-2xl border border-gray-200 bg-surface p-6"
+      >
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="sm:col-span-2">
+            <span class="mb-1.5 block text-sm font-medium text-secondary">Nome completo *</span>
+            <input class="auth-input" formControlName="full_name" />
+            @if (patientForm.controls.full_name.touched && patientForm.controls.full_name.invalid) {
+              <span class="mt-1 block text-xs text-red-600">Informe o nome do paciente.</span>
+            }
+          </label>
+
+          <label>
+            <span class="mb-1.5 block text-sm font-medium text-secondary">
+              Data de nascimento *
+            </span>
+            <input class="auth-input" type="date" [max]="hoje" formControlName="birth_date" />
+            @if (patientForm.controls.birth_date.touched && patientForm.controls.birth_date.invalid) {
+              <span class="mt-1 block text-xs text-red-600">Informe a data de nascimento.</span>
+            }
+          </label>
+
+          <label>
+            <span class="mb-1.5 block text-sm font-medium text-secondary">Sexo</span>
+            <select class="auth-input" formControlName="sex">
+              <option value="">Selecione…</option>
+              @for (option of sexOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            <span class="mb-1.5 block text-sm font-medium text-secondary">Telefone</span>
+            <input class="auth-input" type="tel" maxlength="40" formControlName="phone" />
+          </label>
+
+          <label>
+            <span class="mb-1.5 block text-sm font-medium text-secondary">Grupo no estudo</span>
+            <select class="auth-input" formControlName="study_group">
+              <option value="">Não classificado</option>
+              @for (option of studyGroupOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </label>
+
+          <app-diagnosis-picker
+            class="sm:col-span-2"
+            [catalog]="catalog()"
+            [(selected)]="diagnoses"
+          />
+        </div>
+
+        <div class="mt-6 flex justify-end">
+          <button type="submit" class="btn-primary h-11 px-6 text-sm" [disabled]="savingPatient()">
+            {{ savingPatient() ? 'Salvando…' : 'Salvar alterações' }}
+          </button>
+        </div>
+      </form>
+    } @else {
+      <dl class="mt-6 grid gap-4 rounded-2xl border border-gray-200 bg-surface p-6 sm:grid-cols-2">
+        <div>
+          <dt class="text-sm font-medium text-secondary">Telefone</dt>
+          <dd class="mt-1 text-base">{{ detail.phone || '—' }}</dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-secondary">Sexo</dt>
+          <dd class="mt-1 text-base">{{ sexLabel(detail.sex) || '—' }}</dd>
+        </div>
+        <div class="sm:col-span-2">
+          <dt class="text-sm font-medium text-secondary">Grupo no estudo</dt>
+          <!-- "Não classificado" por extenso, e não o traço dos campos acima: aqui o
+               nulo é uma decisão que ainda não foi tomada, não um dado que faltou. -->
+          <dd class="mt-1 text-base">
+            {{ studyGroupLabel(detail.study_group) || 'Não classificado' }}
+          </dd>
+        </div>
+        <div class="sm:col-span-2">
+          <dt class="text-sm font-medium text-secondary">Diagnóstico principal</dt>
+          <dd class="mt-1 text-base">
+            @if (detail.diagnoses.length > 0) {
+              <ul class="flex flex-wrap gap-2">
+                @for (d of detail.diagnoses; track d.code) {
+                  <li
+                    class="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-sm text-secondary"
+                  >
+                    {{ d.label }}
+                    <span class="text-xs text-muted">{{ d.code }}</span>
+                    @if (d.is_primary) {
+                      <span class="text-xs font-semibold text-accent">principal</span>
+                    }
+                  </li>
+                }
+              </ul>
+            } @else {
+              —
+            }
+          </dd>
+        </div>
+      </dl>
+    }
+
+    <section class="mt-12">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <h2 class="text-2xl font-bold tracking-tight text-primary">Consultas</h2>
+        <!--
+          Não há formulário de consulta aqui de propósito. Consulta nasce de um
+          caminho só, o fluxo de Análise Térmica, para que toda consulta tenha
+          a mesma origem e possa carregar body map e escores. Este botão apenas
+          abre o fluxo com o paciente já escolhido.
+        -->
+        <!-- Mesma pergunta do botão Editar: registrar consulta é escrever no
+             paciente, e `CreateEncounter` recusa com 403 quem não pode. O admin
+             enxerga prontuário alheio, então sem isto ele atravessaria o fluxo de
+             Análise Térmica inteiro para bater na recusa ao gravar. -->
+        @if (detail.can_edit) {
+          <a
+            class="btn-primary inline-flex h-11 items-center px-6 text-sm"
+            [routerLink]="['/analise', 'analise-termica']"
+            [queryParams]="{ paciente: id() }"
+          >
+            <svg [lucideIcon]="'stethoscope'" class="mr-2 h-4 w-4" aria-hidden="true"></svg>
+            Nova consulta
+          </a>
+        }
+      </div>
+
+      @if (encounters().length === 0) {
+        <p class="empty-state mt-8">Nenhuma consulta registrada para este paciente.</p>
+      } @else {
+        <ul class="mt-6 space-y-3">
+          @for (encounter of encounters(); track encounter.id) {
+            <li class="rounded-2xl border border-gray-200 bg-surface p-5">
+              <a
+                [routerLink]="['/pacientes', 'consultas', encounter.id]"
+                class="float-right text-sm font-semibold text-accent hover:underline"
+              >
+                Abrir
+              </a>
+              <p class="text-sm font-semibold text-primary">
+                {{ encounter.occurred_at | date: 'dd/MM/yyyy HH:mm' }}
+              </p>
+              <p class="mt-1 text-base">{{ encounter.reason || 'Sem motivo informado' }}</p>
+              <!-- Só aparece no acervo compartilhado: a consulta pertence ao dono do
+                   paciente, então sem este rótulo ela pareceria registrada por ele. -->
+              @if (encounter.author_name) {
+                <p class="mt-1 text-sm text-muted">Registrada por {{ encounter.author_name }}</p>
+              }
+
+              <!-- Índices de atividade gravados no fluxo de Análise Térmica -->
+              @if (scoresOf(encounter); as indices) {
+                @if (indices.length > 0) {
+                  <div class="mt-4 flex flex-wrap gap-2">
+                    @for (index of indices; track index.label) {
+                      <span
+                        class="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm"
+                        [style.color]="index.hex"
+                        [style.background-color]="index.hex + '1A'"
+                      >
+                        <span class="font-bold">{{ index.label }}</span>
+                        <span class="font-semibold">{{ index.value }}</span>
+                        <span class="text-xs opacity-80">{{ index.levelLabel }}</span>
+                      </span>
+                    }
+                  </div>
+                }
+              }
+
+              @if (analysisBadgeOf(encounter); as analise) {
+                <p
+                  class="mt-4 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm"
+                  [class.bg-brand-50]="!analise.pending"
+                  [class.text-primary]="!analise.pending"
+                  [class.bg-amber-50]="analise.pending"
+                  [class.text-amber-800]="analise.pending"
+                >
+                  <svg
+                    [lucideIcon]="analise.pending ? 'triangle-alert' : 'camera'"
+                    class="h-4 w-4 shrink-0"
+                    aria-hidden="true"
+                  ></svg>
+                  {{ analise.label }}
+                </p>
+              }
+
+              @if (jointSummaryOf(encounter); as resumo) {
+                <p class="mt-3 text-sm text-secondary">
+                  <span class="font-semibold text-primary">{{ resumo.evaluated }}</span>
+                  articulações avaliadas ·
+                  <span class="font-semibold text-amber-600">{{ resumo.tender }}</span> dolorosas ·
+                  <span class="font-semibold text-red-600">{{ resumo.swollen }}</span> edemaciadas
+                </p>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+</main>

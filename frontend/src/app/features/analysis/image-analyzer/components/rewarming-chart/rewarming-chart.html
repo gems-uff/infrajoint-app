@@ -1,0 +1,17 @@
+@if (series().length > 0) {
+  <div class="relative h-72 md:h-80">
+    <canvas #canvas aria-label="Curva de reaquecimento (temperatura por tempo)" role="img"></canvas>
+  </div>
+} @else {
+  <div class="flex h-72 flex-col items-center justify-center gap-2 text-center md:h-80">
+    <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-50 text-accent">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-6 w-6" aria-hidden="true">
+        <path d="M3 17l5-6 4 4 6-8" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </span>
+    <p class="text-sm font-medium text-primary">Nenhuma articulação selecionada</p>
+    <p class="max-w-sm text-xs text-muted">
+      Selecione uma ou mais articulações acima para traçar a curva de reaquecimento.
+    </p>
+  </div>
+}

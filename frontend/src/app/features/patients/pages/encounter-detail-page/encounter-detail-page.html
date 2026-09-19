@@ -1,0 +1,245 @@
+<main class="page-container py-16 text-ink-strong">
+  @if (loading()) {
+    <p class="empty-state">Carregando consulta…</p>
+  } @else if (detail(); as consulta) {
+    <a
+      [routerLink]="['/pacientes', consulta.patient.id]"
+      class="inline-flex items-center text-sm font-medium text-accent hover:underline"
+    >
+      <svg [lucideIcon]="'arrow-left'" class="mr-1.5 h-4 w-4" aria-hidden="true"></svg>
+      {{ consulta.patient.full_name }}
+    </a>
+
+    <div class="mt-3 flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight text-primary sm:text-4xl">
+          Consulta de {{ consulta.occurred_at | date: 'dd/MM/yyyy' }}
+        </h1>
+        <p class="mt-2 text-base text-muted">
+          {{ consulta.occurred_at | date: 'HH:mm' }} ·
+          {{ consulta.reason || 'Sem motivo informado' }}
+        </p>
+        <!-- Só no acervo compartilhado: a consulta pertence ao dono do paciente, então
+             sem este rótulo ela pareceria registrada por ele. -->
+        @if (consulta.author_name) {
+          <p class="mt-1 text-sm text-muted">Registrada por {{ consulta.author_name }}</p>
+        }
+      </div>
+
+      <div class="flex flex-wrap gap-3">
+        <button
+          type="button"
+          class="btn-secondary inline-flex h-11 items-center justify-center px-6 text-sm disabled:opacity-60"
+          [disabled]="exporting()"
+          (click)="exportPdf()"
+        >
+          <svg [lucideIcon]="'file-down'" class="mr-2 h-4 w-4" aria-hidden="true"></svg>
+          {{ exporting() ? 'Gerando PDF…' : 'Exportar PDF' }}
+        </button>
+
+        <!-- Mesma regra da tela do paciente: quem pergunta é o campo que espelha a
+             policy. No acervo de pesquisa, o par abre a consulta do outro e não pode
+             apagá-la; exportar o PDF acima continua livre para quem consegue ler. -->
+        @if (consulta.can_delete) {
+          <button
+            type="button"
+            class="inline-flex h-11 items-center justify-center rounded-full border border-red-200 bg-red-50 px-6 text-sm font-semibold text-red-600 transition-colors hover:bg-red-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400"
+            (click)="toggleConfirmDelete()"
+          >
+            <svg [lucideIcon]="'trash-2'" class="mr-2 h-4 w-4" aria-hidden="true"></svg>
+            Excluir consulta
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (confirmingDelete()) {
+      <section
+        role="alertdialog"
+        aria-labelledby="titulo-exclusao-consulta"
+        class="mt-6 rounded-2xl border border-red-200 bg-red-50 p-6"
+      >
+        <h2 id="titulo-exclusao-consulta" class="text-lg font-semibold text-red-800">
+          Excluir esta consulta?
+        </h2>
+
+        <!-- Dizer o que será destruído, item a item, importa mais que perguntar "tem
+             certeza": as imagens saem também do bucket e não há como desfazer. -->
+        <p class="mt-2 text-sm text-red-700">Serão apagados:</p>
+        <ul class="mt-1 list-inside list-disc text-sm text-red-700">
+          @if (jointSummary(); as resumo) {
+            <li>
+              <strong>{{ resumo.evaluated }} articulações</strong> avaliadas
+              @if (scores().length > 0) {
+                e os índices
+                <strong>
+                  @for (index of scores(); track index.label) {
+                    {{ index.label }}{{ $last ? '' : ', ' }}
+                  }
+                </strong>
+              }
+            </li>
+          }
+          @if (analysisBadge(); as badge) {
+            <li>
+              <strong>{{ badge.label }}</strong> inclusive as imagens no armazenamento
+            </li>
+          }
+          @if (!jointSummary() && !analysisBadge()) {
+            <li>nenhum achado, esta consulta está vazia</li>
+          }
+        </ul>
+        <p class="mt-3 text-sm text-red-700">
+          Esta ação não pode ser desfeita. O paciente e as outras consultas dele não são afetados.
+        </p>
+
+        <div class="mt-5 flex flex-wrap gap-3">
+          <button
+            type="button"
+            class="inline-flex h-11 items-center justify-center rounded-full bg-red-600 px-6 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
+            [disabled]="deleting()"
+            (click)="confirmDelete()"
+          >
+            {{ deleting() ? 'Excluindo…' : 'Sim, excluir definitivamente' }}
+          </button>
+          <button
+            type="button"
+            class="btn-secondary h-11 px-6 text-sm"
+            [disabled]="deleting()"
+            (click)="toggleConfirmDelete()"
+          >
+            Cancelar
+          </button>
+        </div>
+      </section>
+    }
+
+    @if (error(); as message) {
+      <p role="alert" class="mt-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+        {{ message }}
+      </p>
+    }
+
+    <h2 class="mt-10 text-sm font-semibold uppercase tracking-wider text-secondary">
+      Achados desta consulta
+    </h2>
+
+    <div class="mt-4 grid gap-5 sm:grid-cols-2">
+      <!-- Mapa corporal e índices -->
+      @if (jointSummary(); as resumo) {
+        <a
+          [routerLink]="['/pacientes', 'consultas', consulta.id, 'mapa-corporal']"
+          class="group flex flex-col rounded-2xl border border-black/5 bg-surface p-6 shadow-[0_12px_40px_rgba(27,58,87,0.08)] transition-shadow hover:shadow-[0_18px_50px_rgba(27,58,87,0.16)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          <span
+            class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-primary"
+          >
+            <svg [lucideIcon]="'person-standing'" class="h-6 w-6" aria-hidden="true"></svg>
+          </span>
+          <h3 class="mt-4 text-lg font-bold text-primary">Mapa corporal e índices</h3>
+          <p class="mt-1 text-sm text-secondary">
+            <span class="font-semibold text-primary">{{ resumo.evaluated }}</span> articulações
+            avaliadas ·
+            <span class="font-semibold text-amber-600">{{ resumo.tender }}</span> dolorosas ·
+            <span class="font-semibold text-red-600">{{ resumo.swollen }}</span>
+            edemaciadas
+          </p>
+
+          @if (scores(); as indices) {
+            @if (indices.length > 0) {
+              <div class="mt-4 flex flex-wrap gap-2">
+                @for (index of indices; track index.label) {
+                  <span
+                    class="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm"
+                    [style.color]="index.hex"
+                    [style.background-color]="index.hex + '1A'"
+                  >
+                    <span class="font-bold">{{ index.label }}</span>
+                    <span class="font-semibold">{{ index.value }}</span>
+                    <span class="text-xs opacity-80">{{ index.levelLabel }}</span>
+                  </span>
+                }
+              </div>
+            }
+          }
+
+          <span class="mt-5 inline-flex items-center text-sm font-semibold text-accent">
+            Ver achados
+            <svg
+              [lucideIcon]="'arrow-right'"
+              class="ml-1.5 h-4 w-4 transition-transform group-hover:translate-x-0.5"
+              aria-hidden="true"
+            ></svg>
+          </span>
+        </a>
+      } @else {
+        <div class="flex flex-col rounded-2xl border border-dashed border-gray-300 p-6">
+          <span
+            class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gray-100 text-gray-400"
+          >
+            <svg [lucideIcon]="'person-standing'" class="h-6 w-6" aria-hidden="true"></svg>
+          </span>
+          <h3 class="mt-4 text-lg font-bold text-secondary">Mapa corporal e índices</h3>
+          <p class="mt-1 text-sm text-muted">Esta consulta não tem mapa corporal registrado.</p>
+        </div>
+      }
+
+      <!-- Análise de imagens -->
+      @if (analysisBadge(); as badge) {
+        @if (canOpenAnalysis()) {
+          <a
+            [routerLink]="['/pacientes', 'consultas', consulta.id, 'analisador-de-imagens']"
+            class="group flex flex-col rounded-2xl border border-black/5 bg-surface p-6 shadow-[0_12px_40px_rgba(27,58,87,0.08)] transition-shadow hover:shadow-[0_18px_50px_rgba(27,58,87,0.16)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            <span
+              class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-primary"
+            >
+              <svg [lucideIcon]="'camera'" class="h-6 w-6" aria-hidden="true"></svg>
+            </span>
+            <h3 class="mt-4 text-lg font-bold text-primary">Análise de imagens</h3>
+            <p class="mt-1 text-sm text-secondary">{{ badge.label }}</p>
+            <p class="mt-1 text-sm text-muted">
+              Sobreposição, temperaturas por articulação e curva de reaquecimento, como foram
+              medidas.
+            </p>
+
+            <span class="mt-5 inline-flex items-center text-sm font-semibold text-accent">
+              Ver achados
+              <svg
+                [lucideIcon]="'arrow-right'"
+                class="ml-1.5 h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                aria-hidden="true"
+              ></svg>
+            </span>
+          </a>
+        } @else {
+          <div class="flex flex-col rounded-2xl border border-amber-200 bg-amber-50 p-6">
+            <span
+              class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-700"
+            >
+              <svg [lucideIcon]="'triangle-alert'" class="h-6 w-6" aria-hidden="true"></svg>
+            </span>
+            <h3 class="mt-4 text-lg font-bold text-amber-900">Análise de imagens</h3>
+            <p class="mt-1 text-sm text-amber-800">
+              <span class="font-semibold">Envio de imagens incompleto.</span>
+              As capturas foram gravadas, mas os arquivos não foram confirmados no armazenamento,
+              então as medições não podem ser exibidas.
+            </p>
+          </div>
+        }
+      } @else {
+        <div class="flex flex-col rounded-2xl border border-dashed border-gray-300 p-6">
+          <span
+            class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gray-100 text-gray-400"
+          >
+            <svg [lucideIcon]="'camera'" class="h-6 w-6" aria-hidden="true"></svg>
+          </span>
+          <h3 class="mt-4 text-lg font-bold text-secondary">Análise de imagens</h3>
+          <p class="mt-1 text-sm text-muted">Esta consulta não tem análise de imagem.</p>
+        </div>
+      }
+    </div>
+  } @else if (error(); as message) {
+    <p role="alert" class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{{ message }}</p>
+  }
+</main>

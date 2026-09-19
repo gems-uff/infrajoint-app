@@ -1,0 +1,115 @@
+<main class="page-container py-16 text-ink-strong">
+  <h1 class="text-3xl font-bold tracking-tight text-primary sm:text-4xl">Dashboard</h1>
+  <p class="mt-3 text-base text-muted">
+    @if (clinico()) {
+      Um resumo do que está registrado no seu acervo.
+    } @else {
+      As ferramentas de análise disponíveis para você.
+    }
+  </p>
+
+  @if (error(); as message) {
+    <p
+      role="alert"
+      class="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+    >
+      {{ message }}
+    </p>
+  }
+
+  <!-- Os números só existem para quem tem prontuário. Para os demais a conta é
+       vazia por definição, e "0 pacientes" leria como falha, não como ausência. -->
+  @if (clinico()) {
+    <div class="mt-8 grid gap-4 sm:grid-cols-2">
+      <div class="rounded-2xl border border-gray-200 bg-surface p-6">
+        <p class="text-sm font-medium text-secondary">Pacientes</p>
+        <p class="mt-2 text-4xl font-bold tracking-tight text-primary">
+          {{ loading() ? '—' : total() }}
+        </p>
+      </div>
+
+      <div class="rounded-2xl border border-gray-200 bg-surface p-6">
+        <p class="text-sm font-medium text-secondary">
+          Cadastrados nos últimos {{ janelaDias }} dias
+        </p>
+        <p class="mt-2 text-4xl font-bold tracking-tight text-primary">
+          {{ loading() ? '—' : novos() }}
+        </p>
+      </div>
+    </div>
+  }
+
+  <h2 class="mt-10 text-sm font-semibold uppercase tracking-wider text-secondary">
+    Ações rápidas
+  </h2>
+
+  <ul class="mt-4 grid gap-4 sm:grid-cols-2">
+    @for (acao of acoes(); track acao.rota) {
+      <li>
+        <a
+          [routerLink]="acao.rota"
+          class="group flex h-full flex-col rounded-2xl border border-gray-200 bg-surface p-6 transition-shadow hover:shadow-[0_18px_50px_rgba(27,58,87,0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          <span
+            class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-primary"
+          >
+            <svg [lucideIcon]="acao.icone" class="h-6 w-6" aria-hidden="true"></svg>
+          </span>
+          <h3 class="mt-4 text-lg font-bold text-primary">{{ acao.label }}</h3>
+          <p class="mt-1 text-sm text-secondary">{{ acao.descricao }}</p>
+
+          <span class="mt-4 inline-flex items-center text-sm font-semibold text-accent">
+            Abrir
+            <svg
+              [lucideIcon]="'arrow-right'"
+              class="ml-1.5 h-4 w-4 transition-transform group-hover:translate-x-0.5"
+              aria-hidden="true"
+            ></svg>
+          </span>
+        </a>
+      </li>
+    }
+  </ul>
+
+  @if (clinico()) {
+    <div class="mt-10 flex flex-wrap items-baseline justify-between gap-3">
+      <h2 class="text-sm font-semibold uppercase tracking-wider text-secondary">
+        Pacientes recentes
+      </h2>
+      <a routerLink="/pacientes" class="text-sm font-semibold text-accent hover:underline">
+        Ver todos
+      </a>
+    </div>
+
+    @if (loading()) {
+      <p class="empty-state mt-4">Carregando…</p>
+    } @else if (recentes().length === 0) {
+      <p class="empty-state mt-4">Nenhum paciente cadastrado ainda.</p>
+    } @else {
+      <ul class="mt-4 divide-y divide-gray-200 overflow-hidden rounded-2xl border border-gray-200 bg-surface">
+        @for (paciente of recentes(); track paciente.id) {
+          <li>
+            <a
+              [routerLink]="['/pacientes', paciente.id]"
+              class="flex flex-wrap items-center justify-between gap-2 px-6 py-4 transition-colors hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
+            >
+              <span>
+                <span class="block text-sm font-semibold text-primary">
+                  {{ paciente.full_name }}
+                </span>
+                @if (paciente.diagnoses.length > 0) {
+                  <span class="block text-sm text-secondary">
+                    {{ paciente.diagnoses[0].label }}
+                  </span>
+                }
+              </span>
+              <span class="text-xs text-muted">
+                Cadastrado em {{ paciente.created_at | date: 'dd/MM/yyyy' }}
+              </span>
+            </a>
+          </li>
+        }
+      </ul>
+    }
+  }
+</main>

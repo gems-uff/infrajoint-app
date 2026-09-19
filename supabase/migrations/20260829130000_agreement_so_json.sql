@@ -1,0 +1,42 @@
+-- Tira `agreement_normalized`. O número continua onde sempre esteve: dentro de
+-- `agreement`, no campo `normalized`.
+--
+-- ─── O que a coluna era
+-- Uma cópia de UM campo do jsonb ao lado. Não era outra medida: `agreement` guarda
+-- sete campos (`dice`, `ceiling`, `normalized`, as três áreas e a versão da métrica),
+-- e a coluna espelhava o terceiro. Quem comparava os dois e via números diferentes
+-- estava olhando `dice` contra `normalized`, que divergem de propósito — o Dice bruto
+-- tem teto abaixo de 1 quando as duas máscaras têm áreas distintas, e `normalized` é
+-- `dice / ceiling`, "quão perto do melhor possível este alinhamento chegou".
+--
+-- ─── Por que ela existia, e por que o argumento não se sustenta mais
+-- `slim_analysis_captures` a poupou com esta razão: "sem leitor hoje, mas é projeção
+-- numérica de agreement, feita para a pesquisa poder consultar e ordenar sem abrir o
+-- jsonb; recriá-la depois exigiria backfill".
+--
+-- O backfill existe, mas é uma linha, e é sem perda, porque a fonte fica:
+--
+--     update public.analysis_captures
+--        set agreement_normalized = (agreement->>'normalized')::numeric;
+--
+-- Isso muda a conta. A coluna não era uma decisão irreversível a ser protegida, era
+-- um cache reconstituível — e o custo de mantê-la é o de toda desnormalização: dois
+-- lugares guardando um número, um deles podendo ficar para trás.
+--
+-- O leitor que ela chegou a ter era a "concordância mediana" da linha de qualidade do
+-- laudo, removida nesta mesma leva: é um indicador **sem limiar definido**, e imprimir
+-- um número sem escala num documento clínico convida a uma interpretação que o número
+-- não sustenta. Quem precisar dele para pesquisa lê o jsonb.
+--
+-- ─── O ganho que não é a coluna
+-- Some junto a derivação no backend: `CaptureIn.agreement_normalized` (uma @property
+-- que abria o JSON) e a linha do router que a injetava na gravação. Um lugar a menos
+-- onde o backend calcula algo em vez de só transportar.
+--
+-- ─── Se a pesquisa precisar ordenar por isso
+-- Índice de expressão, sem coluna nova:
+--
+--     create index on public.analysis_captures
+--       (((agreement->>'normalized')::numeric));
+
+alter table public.analysis_captures drop column agreement_normalized;

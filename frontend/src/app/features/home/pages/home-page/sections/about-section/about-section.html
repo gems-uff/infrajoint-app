@@ -1,0 +1,105 @@
+<section id="sobre" class="scroll-mt-28 bg-white py-[7.5rem] sm:py-[6.5rem]">
+  <div class="page-container max-sm:px-6">
+    <div class="grid grid-cols-1 items-center gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-6">
+      <div class="order-2 hidden md:block lg:order-1">
+        <img
+          ngSrc="assets/illustrations/welcome.png"
+          width="1056"
+          height="946"
+          sizes="(min-width: 1024px) 40vw, 90vw"
+          alt="Visualização de diagnóstico e dados clínicos"
+          class="mx-auto w-full max-w-lg object-contain"
+        />
+      </div>
+
+      <div class="order-1 mx-auto w-full max-w-xl lg:order-2 lg:max-w-none">
+        <p class="text-sm font-semibold text-accent sm:text-base">Sobre a plataforma</p>
+
+        <h2
+          class="section-title text-[length:clamp(1.125rem,6.5vw,2rem)] leading-tight sm:text-4xl lg:text-5xl mt-4 max-w-3xl"
+        >
+          Conectando termografia, análise computacional e dados clínicos
+        </h2>
+
+        <div class="section-subtitle mt-6 max-w-2xl space-y-6 text-sm leading-6 sm:text-base">
+          <p>
+            Em estudos de reumatologia baseados em termografia, imagens térmicas, algoritmos de análise e dados clínicos costumam estar distribuídos em diferentes ferramentas. O InfraJoint surgiu para centralizar essas etapas e oferecer um ambiente único para coleta, organização e análise dos dados.
+          </p>
+          <p>
+            A plataforma foi idealizada e desenvolvida como Trabalho de Conclusão de Curso (TCC) em Ciência da Computação, combinando visão computacional, processamento de imagens e conhecimento clínico em uma parceria entre a computação e a medicina.
+          </p>
+          <p>Na prática, o InfraJoint fortalece a pesquisa científica em três pilares:</p>
+
+          <ul class="space-y-4">
+            <li class="flex gap-3">
+              <svg
+                lucideCheck
+                class="mt-0.5 h-5 w-5 shrink-0 text-accent"
+                aria-hidden="true"
+              ></svg>
+              <span>
+                <strong class="font-semibold text-primary">Centralização:</strong> concentra a
+                coleta, a organização e a análise dos dados termográficos em uma única plataforma.
+              </span>
+            </li>
+            <li class="flex gap-3">
+              <svg
+                lucideCheck
+                class="mt-0.5 h-5 w-5 shrink-0 text-accent"
+                aria-hidden="true"
+              ></svg>
+              <span>
+                <strong class="font-semibold text-primary">Padronização:</strong> apoia a definição de protocolos experimentais consistentes, comparáveis e reproduzíveis.
+              </span>
+            </li>
+            <li class="flex gap-3">
+              <svg
+                lucideCheck
+                class="mt-0.5 h-5 w-5 shrink-0 text-accent"
+                aria-hidden="true"
+              ></svg>
+              <span>
+                <strong class="font-semibold text-primary">Reprodutibilidade:</strong> favorece a replicação e a validação dos estudos, aumentando a confiabilidade dos resultados científicos.
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-12 border-t border-b border-soft pt-8 pb-8">
+      <p class="text-center text-sm font-semibold text-muted">Uma colaboração entre</p>
+
+      <div class="mt-5 flex flex-wrap items-center justify-center gap-x-10 gap-y-6">
+        <img
+          src="assets/images/ICUFF.png"
+          width="800"
+          height="600"
+          alt="Instituto de Computação da Universidade Federal Fluminense"
+          class="h-16 w-auto object-contain"
+          loading="lazy"
+          decoding="async"
+        />
+        <img
+          src="assets/images/medUFF.png"
+          width="559"
+          height="394"
+          alt="Faculdade de Medicina da Universidade Federal Fluminense"
+          class="h-16 w-auto object-contain"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+    </div>
+
+    <div class="mt-24 text-center">
+      <h2
+        class="whitespace-nowrap text-[clamp(1rem,4.5vw,2.25rem)] font-bold tracking-tight text-accent"
+      >
+        Pronto para explorar a plataforma?
+      </h2>
+
+      <a routerLink="/login" class="btn-primary navbar-cta mt-8">Acessar Plataforma</a>
+    </div>
+  </div>
+</section>

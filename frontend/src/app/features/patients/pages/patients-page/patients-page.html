@@ -1,0 +1,215 @@
+<main class="page-container py-16 text-ink-strong">
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight text-primary sm:text-4xl">Pacientes</h1>
+      <p class="mt-3 text-base text-muted">Gerencie os pacientes acompanhados na plataforma.</p>
+    </div>
+
+    <button type="button" class="btn-primary h-11 px-6 text-sm" (click)="toggleForm()">
+      <svg
+        [lucideIcon]="formOpen() ? 'x' : 'user-round'"
+        class="mr-2 h-4 w-4"
+        aria-hidden="true"
+      ></svg>
+      {{ formOpen() ? 'Cancelar' : 'Novo paciente' }}
+    </button>
+  </div>
+
+  @if (error()) {
+    <p
+      role="alert"
+      class="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+    >
+      {{ error() }}
+    </p>
+  }
+
+  @if (formOpen()) {
+    <form
+      [formGroup]="form"
+      (ngSubmit)="submit()"
+      class="mt-6 rounded-2xl border border-gray-200 bg-surface p-6"
+    >
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="sm:col-span-2">
+          <span class="mb-1.5 block text-sm font-medium text-secondary">Nome completo *</span>
+          <input class="auth-input" formControlName="full_name" autocomplete="off" />
+          @if (form.controls.full_name.touched && form.controls.full_name.invalid) {
+            <span class="mt-1 block text-xs text-red-600">Informe o nome do paciente.</span>
+          }
+        </label>
+
+        <label>
+          <span class="mb-1.5 block text-sm font-medium text-secondary">Data de nascimento *</span>
+          <input class="auth-input" type="date" [max]="hoje" formControlName="birth_date" />
+          @if (form.controls.birth_date.touched && form.controls.birth_date.invalid) {
+            <span class="mt-1 block text-xs text-red-600">
+              Informe a data de nascimento: é ela que distingue dois pacientes de mesmo nome.
+            </span>
+          }
+        </label>
+
+        <label>
+          <span class="mb-1.5 block text-sm font-medium text-secondary">Sexo</span>
+          <select class="auth-input" formControlName="sex">
+            <option value="">Selecione…</option>
+            @for (option of sexOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+
+        <label>
+          <span class="mb-1.5 block text-sm font-medium text-secondary">Telefone</span>
+          <input class="auth-input" type="tel" maxlength="40" formControlName="phone" autocomplete="off" />
+        </label>
+
+        <label>
+          <span class="mb-1.5 block text-sm font-medium text-secondary">Grupo no estudo</span>
+          <select class="auth-input" formControlName="study_group">
+            <option value="">Não classificado</option>
+            @for (option of studyGroupOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+
+        <app-diagnosis-picker
+          class="sm:col-span-2"
+          [catalog]="catalog()"
+          [(selected)]="diagnoses"
+        />
+      </div>
+
+      <!-- Homônimo não é erro, é uma pergunta: quase sempre o médico queria abrir
+           quem já está cadastrado, e é por isso que a lista vem antes do botão.
+
+           No acervo de pesquisa a lista alcança os pacientes dos pares, então o texto
+           não pode mais dizer "no seu cadastro", e cada item precisa dizer de quem é:
+           abrir o prontuário de outra pessoa sem saber disso é o acidente que o
+           rótulo evita. -->
+      @if (duplicates().length > 0) {
+        <section
+          role="alert"
+          class="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900"
+        >
+          <p class="font-semibold">
+            @if (duplicates().length === 1) {
+              Já existe um paciente com este nome no acervo:
+            } @else {
+              Já existem {{ duplicates().length }} pacientes com este nome no acervo:
+            }
+          </p>
+
+          <ul class="mt-3 space-y-2">
+            @for (existente of duplicates(); track existente.id) {
+              <li
+                class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white/70 px-4 py-3"
+              >
+                <span>
+                  <span class="font-semibold text-primary">{{ existente.full_name }}</span>
+                  <!-- A data é o que o médico compara para decidir se é a mesma
+                       pessoa. Desde que ela é obrigatória, todo homônimo listado aqui
+                       tem uma, e a decisão deixa de ser um chute. -->
+                  <span class="ml-2 text-xs text-amber-800">
+                    Nascimento {{ existente.birth_date | date: 'dd/MM/yyyy' }}
+                  </span>
+                  @if (existente.owner_name) {
+                    <span class="ml-2 text-xs font-medium text-amber-800">
+                      Cadastrado por {{ existente.owner_name }}
+                    </span>
+                  }
+                </span>
+                <a
+                  [routerLink]="['/pacientes', existente.id]"
+                  class="text-sm font-semibold text-accent hover:underline"
+                >
+                  Abrir este
+                </a>
+              </li>
+            }
+          </ul>
+
+          <p class="mt-3 text-xs">
+            Se for outra pessoa, confirme abaixo, mas ela precisa ter data de nascimento diferente,
+            senão não haveria como distinguir as duas depois.
+          </p>
+        </section>
+      }
+
+      <div class="mt-6 flex flex-wrap justify-end gap-3">
+        @if (duplicates().length > 0) {
+          <button
+            type="button"
+            class="btn-secondary h-11 px-6 text-sm"
+            [disabled]="saving()"
+            (click)="submit(true)"
+          >
+            {{ saving() ? 'Salvando…' : 'É outra pessoa, cadastrar assim mesmo' }}
+          </button>
+        } @else {
+          <button type="submit" class="btn-primary h-11 px-6 text-sm" [disabled]="saving()">
+            {{ saving() ? 'Salvando…' : 'Salvar paciente' }}
+          </button>
+        }
+      </div>
+    </form>
+  }
+
+  @if (loading()) {
+    <p class="empty-state mt-10">Carregando pacientes…</p>
+  } @else if (patients().length === 0) {
+    <p class="empty-state mt-10">Nenhum paciente cadastrado ainda.</p>
+  } @else {
+    <ul class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      @for (patient of patients(); track patient.id) {
+        <li>
+          <a
+            [routerLink]="['/pacientes', patient.id]"
+            class="block h-full rounded-2xl border border-gray-200 bg-surface p-5 transition-shadow hover:shadow-[0_18px_50px_rgba(27,58,87,0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            <p class="text-base font-semibold text-primary">{{ patient.full_name }}</p>
+            <p class="mt-1 text-sm text-muted">
+              Nascimento {{ patient.birth_date | date: 'dd/MM/yyyy' }}
+            </p>
+            <!-- Só vem preenchido em prontuário alheio: para o admin, o de qualquer
+                 médico; para o pesquisador, o dos pares do acervo. Ver `owner_name` em
+                 patient.model.ts. -->
+            @if (patient.owner_name) {
+              <p
+                class="mt-2 inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-secondary"
+              >
+                <svg [lucideIcon]="'stethoscope'" class="h-3.5 w-3.5" aria-hidden="true"></svg>
+                {{ patient.owner_name }}
+              </p>
+            }
+            <!-- O grupo no estudo era gravado e não aparecia em lugar nenhum: quem
+                 cadastrava um controle só voltava a vê-lo abrindo o formulário de
+                 edição. Fica ao lado do diagnóstico, e não junto dele, porque é papel
+                 no estudo e não achado clínico: um controle pode ter diagnóstico
+                 incidental sem deixar de ser controle. -->
+            @if (studyGroupLabel(patient.study_group); as grupo) {
+              <p
+                class="mt-2 inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-2.5 py-1 text-xs font-medium text-secondary"
+              >
+                <svg [lucideIcon]="'flask-conical'" class="h-3.5 w-3.5" aria-hidden="true"></svg>
+                {{ grupo }}
+              </p>
+            }
+            @if (patient.diagnoses.length > 0) {
+              <p class="mt-3 text-sm text-secondary">
+                {{ patient.diagnoses[0].label }}
+                @if (patient.diagnoses.length > 1) {
+                  <span class="text-muted">+{{ patient.diagnoses.length - 1 }}</span>
+                }
+              </p>
+            }
+            <p class="mt-4 text-xs text-muted">
+              Cadastrado em {{ patient.created_at | date: 'dd/MM/yyyy' }}
+            </p>
+          </a>
+        </li>
+      }
+    </ul>
+  }
+</main>

@@ -1,0 +1,11 @@
+@if (displayUrl(); as url) {
+  <img
+    [src]="url"
+    (error)="onError(url)"
+    alt=""
+    referrerpolicy="no-referrer"
+    class="h-full w-full object-cover"
+  />
+} @else {
+  <span [class]="textClass()">{{ initials() }}</span>
+}

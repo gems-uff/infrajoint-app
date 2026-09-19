@@ -1,0 +1,15 @@
+<section id="recursos" aria-labelledby="recursos-title" class="scroll-mt-24 py-4 sm:pb-30 pt-25">
+  <div class="page-container">
+    <div class="mx-auto max-w-3xl text-center">
+      <h2 id="recursos-title" class="section-title text-[length:clamp(1.125rem,6.5vw,2rem)] leading-tight sm:text-4xl lg:text-5xl">
+        <span class="text-accent">Recursos</span> da Plataforma
+      </h2>
+    </div>
+
+    <div class="mt-[3.75rem] grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      @for (feature of platformFeatures; track feature.title) {
+        <app-platform-feature-card [feature]="feature" />
+      }
+    </div>
+  </div>
+</section>

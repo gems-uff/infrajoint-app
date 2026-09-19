@@ -1,0 +1,81 @@
+# Deploy do backend no Render.
+#
+# Mora na RAIZ do repositório porque é onde o Render procura um Blueprint — em
+# backend/render.yaml o arquivo seria simplesmente ignorado. O `rootDir` abaixo é o que
+# aponta para a pasta certa.
+#
+# Versionado de propósito: configuração que só existe no dashboard é configuração que
+# ninguém revisa e que se perde ao recriar o serviço.
+#
+# `sync: false` faz o Render pedir o valor no dashboard em vez de gravá-lo aqui —
+# nenhum segredo entra no repositório.
+
+services:
+  - type: web
+    name: infrajoint-api
+    runtime: python
+    rootDir: backend
+    plan: free
+
+    # O Supabase está em sa-east-1 (São Paulo) e o Render não tem região na América do
+    # Sul. Virginia é a menos distante; o default seria Oregon, o pior caso. Importa
+    # porque cada request autenticado faz 5–6 round trips sequenciais ao banco (BEGIN,
+    # SET LOCAL ROLE, claims, SELECT role, query, COMMIT) — a latência multiplica por 6.
+    region: virginia
+
+    # Monorepo: sem isto, todo commit no frontend Angular redeploya o backend à toa.
+    buildFilter:
+      paths:
+        - backend/**
+        - render.yaml
+
+    # O autodetect Python do Render procura requirements.txt / Pipfile / Poetry. Um
+    # pyproject.toml com backend setuptools puro não é reconhecido, então o build é
+    # explícito.
+    buildCommand: pip install -e .
+
+    # --host 0.0.0.0 e $PORT não são opcionais: o default do uvicorn é 127.0.0.1:8000,
+    # onde o health check do Render nunca chega.
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+
+    # Liveness, não readiness — /health responde sem tocar no banco de propósito.
+    healthCheckPath: /health
+
+    envVars:
+      # StrEnum (app/domain/entities.py) exige 3.11+, e o default do Render muda.
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+
+      # Transaction pooler (porta 6543), usuário no formato <role>.<project_ref>, e
+      # ?sslmode=require — sem ele o asyncpg usa `prefer`, que aceita texto puro em
+      # silêncio e não valida certificado. É dado clínico atravessando a internet.
+      - key: DATABASE_URL
+        sync: false
+
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_JWKS_URL
+        sync: false
+
+      # Origens do frontend, separadas por vírgula. '*' é recusado no boot.
+      - key: CORS_ORIGINS
+        sync: false
+
+      # Cloudflare R2. Sem elas a API sobe, mas o upload de capturas responde 503 e a
+      # consulta reaberta não mostra imagem nenhuma — a Fase 5 inteira fica fora do ar
+      # sem nenhum erro no boot que denuncie isso.
+      #
+      # O bucket também precisa de política de CORS liberando a origem do frontend,
+      # com PUT e GET: o browser fala direto com o R2, o backend só assina.
+      - key: R2_ENDPOINT
+        sync: false
+      - key: R2_BUCKET
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+
+      # Em produção o mapa da API não precisa ser público.
+      - key: DOCS_ENABLED
+        value: "false"

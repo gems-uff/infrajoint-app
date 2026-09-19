@@ -1,0 +1,144 @@
+<nav
+  #navbar
+  aria-label="Navegação principal"
+  class="page-container sticky top-0 z-50 bg-surface/90 py-1 shadow-[0_4px_20px_rgba(27,58,87,0.06)] backdrop-blur will-change-transform"
+>
+  <div class="flex h-16 items-center justify-between gap-3">
+    <!-- Left: logo (always visible) -->
+    <div class="flex items-center lg:flex-1 lg:justify-start">
+      <a
+        routerLink="/"
+        aria-label="Ir para a página inicial da InfraJoint"
+        class="flex items-center"
+      >
+        <img
+          ngSrc="assets/images/logo.png"
+          width="1518"
+          height="377"
+          sizes="(min-width: 1024px) 12vw, (min-width: 640px) 18vw, 32vw"
+          alt="InfraJoint"
+          class="h-10 w-auto object-contain sm:h-10 lg:h-11"
+        />
+      </a>
+    </div>
+
+    <!-- Center: site links (desktop only) -->
+    @if (showSiteLinks()) {
+      <div class="hidden flex-1 items-center justify-center gap-4 sm:gap-9 lg:flex">
+        <a routerLink="/" class="nav-link"> Home </a>
+
+        <a routerLink="/" fragment="recursos" class="nav-link"> Recursos </a>
+
+        <a routerLink="/" fragment="fluxo" class="nav-link"> Fluxo de Análise </a>
+
+        <a routerLink="/" fragment="sobre" class="nav-link"> Sobre </a>
+      </div>
+    }
+
+    <!-- Right: priority actions (Login/avatar) + hamburger on mobile -->
+    <div class="flex items-center justify-end gap-3 sm:gap-4 lg:flex-1 lg:gap-6">
+      @if (isAuthenticated()) {
+        <a routerLink="/dashboard" class="nav-link hidden lg:block"> Dashboard </a>
+
+        <a
+          routerLink="/perfil"
+          aria-label="Abrir perfil"
+          class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-50 text-xs font-semibold text-accent ring-1 ring-black/5 transition-colors duration-300 hover:ring-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+        >
+          <app-user-avatar />
+        </a>
+      } @else {
+        <a routerLink="/login" class="navbar-cta-secondary"> Entrar </a>
+
+        <a routerLink="/register" class="btn-primary navbar-cta hidden lg:inline-flex">
+          Cadastrar
+        </a>
+      }
+
+      <!-- Hamburger (mobile / tablet only) -->
+      <button
+        type="button"
+        (click)="toggleDrawer()"
+        [attr.aria-expanded]="drawerOpen()"
+        aria-controls="mobile-nav-drawer"
+        aria-label="Abrir menu de navegação"
+        class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-primary transition-colors duration-200 hover:bg-brand-50 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:hidden"
+      >
+        <svg [lucideIcon]="'menu'" class="h-6 w-6" aria-hidden="true"></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile overlay (kept in the DOM so it can fade both ways) -->
+<div
+  class="fixed inset-0 z-[60] bg-primary/40 backdrop-blur-sm transition-opacity duration-300 ease-out lg:hidden"
+  [class.opacity-100]="drawerOpen()"
+  [class.opacity-0]="!drawerOpen()"
+  [class.pointer-events-none]="!drawerOpen()"
+  (click)="closeDrawer()"
+  aria-hidden="true"
+></div>
+
+<!-- Mobile navigation drawer -->
+<aside
+  id="mobile-nav-drawer"
+  aria-label="Menu de navegação"
+  [attr.aria-hidden]="!drawerOpen()"
+  [attr.inert]="drawerOpen() ? null : ''"
+  class="fixed inset-y-0 right-0 z-[70] flex w-80 max-w-[85vw] transform flex-col bg-surface shadow-[0_20px_60px_rgba(27,58,87,0.18)] transition-transform duration-300 ease-out will-change-transform lg:hidden"
+  [class.translate-x-0]="drawerOpen()"
+  [class.translate-x-full]="!drawerOpen()"
+>
+  <!-- Drawer header: logo + close -->
+  <div class="flex h-16 items-center justify-between border-b border-black/5 px-5">
+    <a
+      routerLink="/"
+      (click)="closeDrawer()"
+      aria-label="Ir para a página inicial da InfraJoint"
+      class="flex items-center"
+    >
+      <img
+        ngSrc="assets/images/logo.png"
+        width="1518"
+        height="377"
+        alt="InfraJoint"
+        class="h-10 w-auto object-contain"
+      />
+    </a>
+
+    <button
+      type="button"
+      (click)="closeDrawer()"
+      aria-label="Fechar menu de navegação"
+      class="inline-flex h-10 w-10 items-center justify-center rounded-xl text-secondary transition-colors duration-200 hover:bg-brand-50 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+    >
+      <svg [lucideIcon]="'x'" class="h-5 w-5" aria-hidden="true"></svg>
+    </button>
+  </div>
+
+  <!-- Drawer links -->
+  <nav class="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4" aria-label="Menu principal">
+    @if (showSiteLinks()) {
+      <a routerLink="/" (click)="closeDrawer()" class="drawer-link">Home</a>
+      <a routerLink="/" fragment="recursos" (click)="closeDrawer()" class="drawer-link">Recursos</a>
+      <a routerLink="/" fragment="fluxo" (click)="closeDrawer()" class="drawer-link"
+        >Fluxo de Análise</a
+      >
+      <a routerLink="/" fragment="sobre" (click)="closeDrawer()" class="drawer-link">Sobre</a>
+    }
+  </nav>
+
+  <!-- Drawer footer CTA -->
+  <div class="border-t border-black/5 px-5 py-4">
+    @if (isAuthenticated()) {
+      <a routerLink="/dashboard" (click)="closeDrawer()" class="btn-primary navbar-cta w-full">
+        Ir para o Dashboard
+      </a>
+    } @else {
+      <a routerLink="/register" (click)="closeDrawer()" class="btn-primary navbar-cta w-full">
+        Cadastrar
+      </a>
+    }
+  </div>
+</aside>

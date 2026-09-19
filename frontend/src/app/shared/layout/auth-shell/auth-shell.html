@@ -1,0 +1,177 @@
+<div class="min-h-screen bg-surface text-ink-strong">
+  <!-- Mobile top bar -->
+  <header
+    class="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-black/5 bg-surface/90 px-4 backdrop-blur lg:hidden"
+  >
+    <button
+      type="button"
+      (click)="openSidebar()"
+      aria-label="Abrir menu de navegação"
+      class="inline-flex h-10 w-10 items-center justify-center rounded-xl text-secondary transition-colors hover:bg-brand-50 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+    >
+      <svg [lucideIcon]="'menu'" class="h-5 w-5" aria-hidden="true"></svg>
+    </button>
+
+    <a
+      routerLink="/"
+      aria-label="Ir para a página inicial da InfraJoint"
+      class="flex items-center"
+    >
+      <img
+        ngSrc="assets/images/logo3.png"
+        width="1518"
+        height="377"
+        alt="InfraJoint"
+        class="h-7 w-auto object-contain"
+      />
+    </a>
+  </header>
+
+  <!-- Mobile overlay -->
+  @if (sidebarOpen()) {
+    <div
+      class="fixed inset-0 z-40 bg-primary/40 backdrop-blur-sm lg:hidden"
+      (click)="closeSidebar()"
+      aria-hidden="true"
+    ></div>
+  }
+
+  <div class="lg:flex">
+    <!-- Sidebar -->
+    <aside
+      aria-label="Navegação principal"
+      class="fixed inset-y-0 left-0 z-50 flex w-72 transform flex-col border-r border-white/10 bg-primary px-4 py-6 shadow-[0_20px_60px_rgba(27,58,87,0.12)] transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:translate-x-0 lg:shadow-none"
+      [class.translate-x-0]="sidebarOpen()"
+      [class.-translate-x-full]="!sidebarOpen()"
+    >
+      <!-- Header: logo + mobile close -->
+      <div class="flex items-center justify-between px-1">
+        <a
+          routerLink="/"
+          aria-label="Ir para a página inicial da InfraJoint"
+          class="flex items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+        >
+          <img
+            ngSrc="assets/images/logo3.png"
+            width="1518"
+            height="377"
+            alt="InfraJoint"
+            class="h-9 w-auto object-contain brightness-0 invert"
+          />
+        </a>
+
+        <button
+          type="button"
+          (click)="closeSidebar()"
+          aria-label="Fechar menu de navegação"
+          class="inline-flex h-9 w-9 items-center justify-center rounded-xl text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:hidden"
+        >
+          <svg [lucideIcon]="'x'" class="h-5 w-5" aria-hidden="true"></svg>
+        </button>
+      </div>
+
+      <!-- User profile -->
+      <div class="mt-7 flex items-center gap-3 px-1">
+        <a
+          routerLink="/perfil"
+          aria-label="Ver perfil"
+          class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-50 text-sm font-semibold text-primary ring-1 ring-white/15 transition-shadow hover:ring-2 hover:ring-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          <app-user-avatar />
+        </a>
+
+        <div class="min-w-0">
+          <p class="truncate text-sm font-semibold text-white">Olá, {{ greetingName() }} 👋</p>
+          <p class="truncate text-xs text-white/60">Bem-vindo ao InfraJoint!</p>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="mt-8 flex-1 overflow-y-auto" aria-label="Menu principal">
+        <p class="px-3.5 pb-2 text-[11px] font-semibold uppercase tracking-wider text-white/40">
+          Menu
+        </p>
+
+        <ul class="space-y-1">
+          @for (entry of visibleNav(); track entry.label; let i = $index) {
+            <li>
+              @if (entry.kind === 'group') {
+                <!-- Collapsible section -->
+                <button
+                  type="button"
+                  (click)="toggleGroup(entry.label)"
+                  [attr.aria-expanded]="isExpanded(entry.label)"
+                  [attr.aria-controls]="'nav-group-' + i"
+                  class="group flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors duration-200 hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&>svg]:transition-colors"
+                  [ngClass]="isGroupActive(entry) || isExpanded(entry.label) ? 'text-white' : 'text-white/70'"
+                >
+                  <svg
+                    [lucideIcon]="entry.icon"
+                    class="h-5 w-5 shrink-0"
+                    [ngClass]="isGroupActive(entry) ? 'text-white' : 'text-white/55'"
+                    aria-hidden="true"
+                  ></svg>
+                  <span class="flex-1 text-left">{{ entry.label }}</span>
+                  <svg
+                    [lucideIcon]="'chevron-down'"
+                    class="h-4 w-4 shrink-0 text-white/45 transition-transform duration-200"
+                    [class.-rotate-90]="!isExpanded(entry.label)"
+                    aria-hidden="true"
+                  ></svg>
+                </button>
+
+                @if (isExpanded(entry.label)) {
+                  <ul [id]="'nav-group-' + i" class="mt-1 ml-5 space-y-1 border-l border-white/10 pl-3">
+                    @for (child of entry.children; track child.route) {
+                      <li>
+                        <a
+                          [routerLink]="child.route"
+                          routerLinkActive="!bg-white/10 !text-white [&>svg]:!text-white"
+                          class="group flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white/70 transition-colors duration-200 hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&>svg]:text-white/55 [&>svg]:transition-colors hover:[&>svg]:text-white"
+                        >
+                          <svg
+                            [lucideIcon]="child.icon"
+                            class="h-5 w-5 shrink-0"
+                            aria-hidden="true"
+                          ></svg>
+                          <span>{{ child.label }}</span>
+                        </a>
+                      </li>
+                    }
+                  </ul>
+                }
+              } @else {
+                <!-- Standalone link -->
+                <a
+                  [routerLink]="entry.route"
+                  routerLinkActive="!bg-white/10 !text-white [&>svg]:!text-white"
+                  class="group flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white/70 transition-colors duration-200 hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&>svg]:text-white/55 [&>svg]:transition-colors hover:[&>svg]:text-white"
+                >
+                  <svg [lucideIcon]="entry.icon" class="h-5 w-5 shrink-0" aria-hidden="true"></svg>
+                  <span>{{ entry.label }}</span>
+                </a>
+              }
+            </li>
+          }
+        </ul>
+      </nav>
+
+      <!-- Footer: logout -->
+      <div class="mt-auto border-t border-white/10 pt-4">
+        <button
+          type="button"
+          (click)="logout()"
+          class="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-red-300 transition-colors duration-200 hover:bg-red-500/15 hover:text-red-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-300/60"
+        >
+          <svg [lucideIcon]="'log-out'" class="h-5 w-5 shrink-0" aria-hidden="true"></svg>
+          <span>Sair</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Routed page content -->
+    <div class="min-w-0 flex-1">
+      <router-outlet />
+    </div>
+  </div>
+</div>

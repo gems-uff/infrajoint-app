@@ -1,0 +1,11 @@
+<canvas
+  #canvas
+  tabindex="0"
+  class="h-auto w-full touch-none rounded-2xl bg-white outline-none ring-1 ring-black/5 focus-visible:ring-2 focus-visible:ring-accent/60"
+  [style.cursor]="cursor()"
+  (pointerdown)="onPointerDown($event)"
+  (pointermove)="onPointerMove($event)"
+  (pointerup)="onPointerUp($event)"
+  (pointercancel)="onPointerCancel()"
+  (keydown)="onKeyDown($event)"
+></canvas>

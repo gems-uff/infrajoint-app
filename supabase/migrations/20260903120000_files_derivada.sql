@@ -1,0 +1,40 @@
+-- Tira `analysis_captures.files`. A lista de arquivos de uma captura passa a ser
+-- derivada, como a chave do objeto no R2 já era.
+--
+-- ─── O que a coluna era
+-- A declaração enviada no POST: por `kind`, o `size` e o `content_type` do arquivo
+-- que o cliente disse que enviaria. Nunca foi prova de envio — o comentário original
+-- dizia isso em voz alta.
+--
+-- ─── Por que ela existia
+-- Três leitores enumeravam `files` para saber quais arquivos uma captura tinha: o
+-- HEAD que fechava a análise em `ready`, a assinatura das URLs de leitura e a
+-- exclusão em massa. Um quarto lia `content_type` para assinar o PUT.
+--
+-- ─── Por que nenhum desses argumentos sobrou
+-- O conjunto virou invariante: o schema de entrada recusa uma captura que não declare
+-- os três arquivos (optical, thermal, matrix). Com isso, iterar o enum `FileKind` diz
+-- exatamente o que a coluna dizia, linha a linha, sem guardar nada.
+--
+-- O HEAD saiu junto: quem confere o envio é o cliente, que vê a resposta de cada PUT
+-- e só fecha a análise quando nenhum falhou.
+--
+-- E o `content_type` é lido uma vez só, para assinar, DENTRO da mesma requisição que
+-- o recebeu no corpo — persistir era ida ao banco e volta para buscar o que já estava
+-- na mão. O `size` nunca teve leitor.
+--
+-- ─── O que se perde, e é aceito
+-- A declaração histórica. Como as chaves são derivadas dos ids e o conjunto é fixo,
+-- não há o que reconstruir: para toda captura, os arquivos são os três.
+--
+-- ATENÇÃO antes de aplicar: linhas gravadas antes da invariante podem ter menos de
+-- três arquivos — o caminho da análise avulsa aceitava um subconjunto. Depois desta
+-- migração o backend assume os três, e uma dessas linhas passa a assinar URL de
+-- objeto inexistente (imagem quebrada na reabertura; a exclusão segue inofensiva,
+-- porque chave ausente não é erro no delete do R2). Para achá-las antes:
+--
+--     select id, encounter_id, capture_index, files
+--       from public.analysis_captures
+--      where (select count(*) from jsonb_object_keys(files)) <> 3;
+
+alter table public.analysis_captures drop column files;

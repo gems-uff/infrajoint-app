@@ -1,0 +1,173 @@
+@let stepVm = step();
+
+<div class="relative overflow-hidden pl-10" [class.pb-3]="!isLast()">
+  <div
+    class="relative rounded-xl border bg-white"
+    [class.border-gray-200]="!isOpen()"
+    [class.border-gray-300]="isOpen()"
+  >
+    <div
+      class="relative flex cursor-pointer items-center gap-3 p-3"
+      role="button"
+      tabindex="0"
+      [attr.aria-expanded]="isOpen()"
+      (click)="toggle()"
+      (keydown.enter)="toggle()"
+      (keydown.space)="toggle()"
+    >
+      @if (!isFirst()) {
+        <span
+          class="pointer-events-none absolute left-0 top-0 h-1/2 w-px -translate-x-[21px] {{
+            lineColor()
+          }}"
+          aria-hidden="true"
+        ></span>
+      }
+      @if (!isLast()) {
+        <span
+          class="pointer-events-none absolute left-0 top-1/2 h-[1500px] w-px -translate-x-[21px] {{
+            lineColor()
+          }}"
+          aria-hidden="true"
+        ></span>
+      }
+      <div [class]="dotClasses()">{{ stepVm.id }}</div>
+
+      <div [class]="iconClasses()">
+        <svg [lucideIcon]="stepVm.icon" class="h-4 w-4" aria-hidden="true" />
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="text-[15px] font-medium text-gray-900">{{ stepVm.title }}</p>
+        @if (stepVm.subtitle) {
+          <p class="mt-0.5 text-sm text-gray-500">{{ stepVm.subtitle }}</p>
+        }
+      </div>
+      <svg
+        [class.rotate-180]="isOpen()"
+        class="h-4 w-4 text-gray-400 transition-transform"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.24 4.5a.75.75 0 0 1-1.08 0l-4.24-4.5a.75.75 0 0 1 .02-1.06z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </div>
+
+    @if (isOpen()) {
+      <div
+        class="border-t border-gray-100 px-4 pb-4"
+        [attr.aria-hidden]="!isOpen()"
+        @expandCollapse
+      >
+        <div class="mt-3 grid gap-4" [class.lg:grid-cols-[1fr_220px]]="stepVm.image">
+          <div>
+            <div class="grid grid-cols-2 gap-2">
+              @for (detail of stepVm.details; track detail.label) {
+                <div class="step-detail-card">
+                  <p class="step-detail-label">{{ detail.label }}</p>
+                  <p class="step-detail-value">{{ detail.value }}</p>
+                </div>
+              }
+            </div>
+
+            @if (stepVm.badges.length) {
+              <div class="mt-3 flex flex-wrap gap-1.5">
+                @for (tag of stepVm.badges; track tag.text) {
+                  <span [class]="tagClasses()">{{ tag.text }}</span>
+                }
+              </div>
+            }
+
+            @if (stepVm.note) {
+              <p class="step-note" [class]="noteToneClasses()">
+                {{ stepVm.note }}
+              </p>
+            }
+
+            @if (stepVm.groups?.length) {
+              <div class="mt-3 grid grid-cols-3 gap-2">
+                @for (group of stepVm.groups; track group.letter) {
+                  <div
+                    [class]="groupClasses()"
+                    class="rounded-lg border border-transparent p-2.5"
+                  >
+                    <p class="mb-1 text-lg font-medium">{{ group.letter }}</p>
+                    <p class="text-xs leading-relaxed">{{ group.description }}</p>
+                  </div>
+                }
+              </div>
+            }
+
+            @if (stepVm.cameraParams?.length) {
+              <div class="mt-3 flex flex-col gap-1.5">
+                @for (param of stepVm.cameraParams; track param.key) {
+                  <div class="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-1.5">
+                    <span class="text-sm text-gray-500">{{ param.key }}</span>
+                    <span class="step-detail-value">{{ param.value }}</span>
+                  </div>
+                }
+              </div>
+            }
+
+            @if (stepVm.capturePhases?.length) {
+              <div class="mt-3 grid grid-cols-2 gap-2">
+                @for (phase of stepVm.capturePhases; track phase.title) {
+                  <div class="step-subcard">
+                    <p class="mb-1 text-sm font-medium text-gray-800">
+                      <svg
+                        [lucideIcon]="phase.icon"
+                        class="mr-1 inline h-3.5 w-3.5 align-[-2px]"
+                        aria-hidden="true"
+                      />
+                      {{ phase.title }}
+                    </p>
+                    <p class="step-caption">
+                      {{ phase.description }}
+                    </p>
+                  </div>
+                }
+              </div>
+            }
+
+            @if (stepVm.progress) {
+              <div class="mt-3 flex flex-col gap-2">
+                @for (phase of stepVm.progress.phases; track phase.label) {
+                  <div>
+                    <div class="step-progress-row">
+                      <span>{{ phase.label }}</span>
+                      <span>{{ phase.value }}%</span>
+                    </div>
+                    <div class="step-progress-track">
+                      <div
+                        class="h-full rounded-full transition-all duration-500"
+                        [style.width.%]="phase.value"
+                        [ngClass]="progressBarColor()"
+                      ></div>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          @if (stepVm.image) {
+            <div class="step-image-frame self-start">
+              <img
+                [src]="stepVm.image.src"
+                [alt]="stepVm.image.alt"
+                [width]="stepVm.image.width"
+                [height]="stepVm.image.height"
+                class="h-auto w-full object-contain"
+                loading="lazy"
+              />
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>

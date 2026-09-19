@@ -1,0 +1,36 @@
+<div
+  class="relative mx-auto w-full max-w-[min(54vh,620px)]"
+  style="aspect-ratio: 1023 / 1537"
+>
+  <img [src]="bodyImage" alt="Mapa corporal do paciente" class="absolute inset-0 h-full w-full object-contain" />
+
+  @for (spot of hotspots(); track spot.key) {
+    <button
+      type="button"
+      (click)="activate(spot)"
+      [attr.aria-label]="spot.isHand ? 'Abrir ' + spot.ariaLabel : 'Avaliar ' + spot.ariaLabel"
+      class="group absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full focus:outline-none"
+      [style.left.%]="spot.xPct"
+      [style.top.%]="spot.yPct"
+      [style.width.px]="spot.isHand ? 34 : 28"
+      [style.height.px]="spot.isHand ? 34 : 28"
+    >
+      <span
+        class="block h-full w-full rounded-full ring-2 shadow-md transition-transform duration-150 group-hover:scale-110 group-focus-visible:scale-110"
+        [class.ring-white]="spot.analyzed"
+        [class.ring-accent]="!spot.analyzed"
+        [class.outline]="spot.selected"
+        [class.outline-2]="spot.selected"
+        [class.outline-offset-2]="spot.selected"
+        [class.outline-primary]="spot.selected"
+        [style.background-color]="spot.analyzed ? analyzedColor : 'rgba(255,255,255,0.15)'"
+      ></span>
+
+      <span
+        class="pointer-events-none absolute left-1/2 top-[115%] -translate-x-1/2 whitespace-nowrap rounded bg-surface/95 px-1.5 py-0.5 text-[10px] font-semibold text-primary opacity-0 shadow-sm ring-1 ring-black/5 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
+      >
+        {{ spot.label }}@if (spot.badge) {<span class="ml-1 font-medium text-muted">{{ spot.badge }}</span>}
+      </span>
+    </button>
+  }
+</div>

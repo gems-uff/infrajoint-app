@@ -1,0 +1,43 @@
+-- Duas colunas que a revisão do esquema mostrou não se sustentarem.
+--
+-- Saem juntas porque foram reprovadas pelo mesmo critério, o mesmo que já havia deixado
+-- de fora `joints.short_label`, uma coluna de ordenação e `joints.landmark_id`: coluna
+-- sem consumidor, ou que repete informação já gravada, não pertence ao schema.
+--
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 1. patient_diagnoses.diagnosed_at: nunca foi escrita
+--
+-- Ela entrou no desenho com a ressalva "tire se não for coletar", e não foi coletada.
+-- `DiagnosisIn`, o schema da borda, aceita apenas `code` e `is_primary`; o seletor de
+-- diagnósticos da tela não pergunta data. Nenhum caminho de escrita a preenche e nenhuma
+-- leitura a consulta.
+--
+-- Se um dia a data do diagnóstico virar dado do estudo, ela volta com um `alter table` de
+-- uma linha. Mantê-la vazia enquanto isso não acontece só ensina quem lê o schema que
+-- existe informação ali que não existe.
+-- ─────────────────────────────────────────────────────────────────────────────
+alter table public.patient_diagnoses drop column diagnosed_at;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 2. capture_measurements.skin_coverage: é conta das outras duas
+--
+-- O analisador a calcula assim, em `image-analyzer/joint-rois.ts`:
+--
+--     skinCoverage = stats.area > 0 ? stats.count / stats.area : 0
+--
+-- Ou seja, é exatamente `sample_count / area`, e as duas já estão gravadas ao lado. Dado
+-- derivado guardado junto da origem tem um custo que só aparece depois: no dia em que uma
+-- correção mudar a forma de contar células, a coluna vira a única que discorda das outras
+-- duas, e nada avisa.
+--
+-- Quem consome a cobertura continua consumindo: `thermal-asymmetry.ts` descarta o par de
+-- articulações quando ela é baixa demais, e a tela marca a ROI como pouco confiável. A
+-- diferença é que o valor volta a ser calculado na reconstrução da ROI, a partir das duas
+-- colunas que são fato medido, e não opinião derivada.
+--
+-- `area` e `sample_count` FICAM, e não são redundantes entre si: a primeira é o tamanho da
+-- região, a segunda é quantas células dela tinham leitura válida. Uma ROI de 10 células
+-- com cobertura total não é a mesma evidência que uma de 1400 com cobertura total, e a
+-- razão sozinha não distingue as duas.
+-- ─────────────────────────────────────────────────────────────────────────────
+alter table public.capture_measurements drop column skin_coverage;

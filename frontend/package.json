@@ -1,0 +1,52 @@
+{
+  "name": "infra-joint",
+  "version": "0.0.0",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "lint": "ng lint",
+    "start:prod": "ng serve --configuration development",
+    "test:coverage": "ng test --coverage --watch=false --coverage-reporters=text-summary --coverage-reporters=html"
+  },
+  "private": true,
+  "packageManager": "npm@11.13.0",
+  "dependencies": {
+    "@angular/animations": "^21.2.23",
+    "@angular/common": "^21.2.23",
+    "@angular/compiler": "^21.2.23",
+    "@angular/core": "^21.2.23",
+    "@angular/forms": "^21.2.23",
+    "@angular/platform-browser": "^21.2.23",
+    "@angular/router": "^21.2.23",
+    "@lucide/angular": "~1.17.0",
+    "@mediapipe/tasks-vision": "^0.10.35",
+    "@supabase/supabase-js": "^2.108.2",
+    "@tailwindcss/postcss": "^4.3.0",
+    "@types/pdfmake": "^0.3.3",
+    "chart.js": "^4.5.1",
+    "gsap": "^3.15.0",
+    "pdfmake": "^0.3.11",
+    "postcss": "^8.5.15",
+    "rxjs": "~7.8.0",
+    "tailwindcss": "^4.3.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^21.2.24",
+    "@angular/cli": "^21.2.24",
+    "@angular/compiler-cli": "^21.2.23",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^20.17.19",
+    "@vitest/coverage-v8": "^4.1.11",
+    "angular-eslint": "21.4.0",
+    "eslint": "^10.3.0",
+    "jsdom": "^28.0.0",
+    "prettier": "^3.8.1",
+    "typescript": "~5.9.2",
+    "typescript-eslint": "8.59.2",
+    "vitest": "^4.0.8"
+  }
+}

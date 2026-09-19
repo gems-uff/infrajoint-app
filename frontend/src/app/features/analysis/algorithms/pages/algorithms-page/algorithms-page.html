@@ -1,0 +1,123 @@
+<main class="page-container py-8 text-ink-strong lg:py-10">
+  <header>
+    <h1 class="text-3xl font-bold tracking-tight text-primary sm:text-4xl">Algoritmos</h1>
+    <p class="mt-2 max-w-2xl text-base text-muted">
+      Aplica um algoritmo de pesquisa sobre uma análise já gravada. Os algoritmos rodam no servidor,
+      e o resultado não é gravado: ele aparece aqui e não vai para o prontuário.
+    </p>
+  </header>
+
+  @if (error(); as mensagem) {
+    <p
+      class="mt-6 flex items-start gap-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800"
+      role="alert"
+    >
+      {{ mensagem }}
+    </p>
+  }
+
+  @if (loading()) {
+    <p class="mt-8 text-sm text-muted">Carregando os algoritmos…</p>
+  } @else if (options().length === 0) {
+    <p class="mt-8 text-sm text-muted">Nenhum algoritmo registrado no servidor.</p>
+  } @else {
+    <div class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+      <!-- Escolha -->
+      <section class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div class="max-w-md">
+          <label for="algoritmo" class="block text-xs font-medium text-secondary">
+            Algoritmo
+          </label>
+          <select
+            id="algoritmo"
+            class="auth-input mt-1 py-2 text-sm"
+            (change)="selectAlgorithm($any($event.target).value)"
+          >
+            @for (algorithm of options(); track algorithm.slug) {
+              <option [value]="algorithm.slug" [selected]="algorithm.slug === selectedSlug()">
+                {{ algorithm.title }}
+              </option>
+            }
+          </select>
+          @if (selected(); as algorithm) {
+            <p class="mt-2 text-sm text-muted">{{ algorithm.description }}</p>
+          }
+        </div>
+
+        <!-- O recorte depende do escopo que o algoritmo declara: consulta pede
+             paciente e consulta, coorte não pede nada. -->
+        @if (cohortSelecionado()) {
+          <p class="mt-5 rounded-xl bg-brand-50 px-3 py-2 text-sm text-secondary">
+            Roda sobre todos os pacientes que você tem acesso. Não há recorte a escolher.
+          </p>
+        } @else {
+          <div class="mt-5 max-w-md">
+            <label for="paciente" class="block text-xs font-medium text-secondary">
+              Paciente
+            </label>
+            <select
+              id="paciente"
+              class="auth-input mt-1 py-2 text-sm"
+              (change)="selectPatient($any($event.target).value)"
+            >
+              <option value="">Selecione…</option>
+              @for (paciente of patientList(); track paciente.id) {
+                <option [value]="paciente.id">{{ paciente.full_name }}</option>
+              }
+            </select>
+          </div>
+
+          @if (selectedPatientId() && encounters().length > 0) {
+            <div class="mt-4 max-w-md">
+              <label for="consulta" class="block text-xs font-medium text-secondary">
+                Consulta
+              </label>
+              <select
+                id="consulta"
+                class="auth-input mt-1 py-2 text-sm"
+                (change)="selectEncounter($any($event.target).value)"
+              >
+                <option value="">Selecione…</option>
+                @for (consulta of encounters(); track consulta.id) {
+                  <option [value]="consulta.id">
+                    {{ consulta.occurred_at | date: 'dd/MM/yyyy HH:mm' }}
+                    ({{ consulta.capture_count }}
+                    {{ consulta.capture_count === 1 ? 'captura' : 'capturas' }})
+                  </option>
+                }
+              </select>
+            </div>
+          }
+        }
+
+        @if (blocked(); as motivo) {
+          <p
+            class="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800"
+          >
+            <span>{{ motivo }}</span>
+          </p>
+        }
+
+        <div class="mt-5">
+          <button
+            type="button"
+            class="btn-primary px-5 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40"
+            [disabled]="blocked() !== null || running()"
+            (click)="run()"
+          >
+            {{ running() ? 'Executando…' : 'Executar' }}
+          </button>
+        </div>
+      </section>
+
+      <!-- Resultado -->
+      <section class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        @if (result(); as resultado) {
+          <app-algorithm-result-view [result]="resultado" [title]="ranAlgorithm()?.title ?? ''" />
+        } @else {
+          <p class="text-sm text-muted">O resultado aparece aqui depois de executar.</p>
+        }
+      </section>
+    </div>
+  }
+</main>

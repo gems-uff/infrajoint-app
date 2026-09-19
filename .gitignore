@@ -1,0 +1,40 @@
+# Segredos. Nenhum arquivo de ambiente sobe, com duas exceções explícitas abaixo:
+# .env.example (modelo sem valor) e .env.local do backend (credenciais fixas do
+# Supabase CLI, públicas e alcançáveis só em 127.0.0.1).
+.env
+.env.*
+!.env.example
+!backend/.env.local
+
+# Chaves e certificados avulsos, caso algum apareça.
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+build/
+dist/
+
+# Node (o frontend tem o próprio .gitignore; isto cobre a raiz e qualquer pasta nova)
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# macOS / editores
+.DS_Store
+Thumbs.db
+.idea/
+*.swp

@@ -1,0 +1,54 @@
+@if (result(); as resultado) {
+  <article class="algorithm-result">
+    @if (resultado.status === 'ok') {
+      @if (title()) {
+        <h4 class="text-sm font-semibold text-primary">{{ title() }}</h4>
+      }
+      <p class="mt-1 text-sm text-muted">{{ resultado.summary }}</p>
+
+      <!--
+        Três formas de mostrar a mesma estrutura, decididas pelo que veio dentro:
+        nenhum número, um só, ou vários. É o que permite um classificador e um
+        índice por articulação usarem esta tela sem nenhum código próprio.
+      -->
+      @if (resultado.values.length === 1) {
+        <div class="mt-4 text-center">
+          <p class="text-3xl font-bold tabular-nums text-primary">
+            {{ resultado.values[0].value | number: '1.1-1' }}
+            <span class="text-lg font-semibold text-secondary">{{ resultado.values[0].unit }}</span>
+          </p>
+          <p class="mt-0.5 text-xs uppercase tracking-wide text-muted">
+            {{ resultado.values[0].label }}
+          </p>
+        </div>
+      } @else if (resultado.values.length > 1) {
+        <table class="mt-4 w-full text-sm">
+          <tbody>
+            @for (valor of resultado.values; track valor.label) {
+              <tr class="border-b border-slate-100 last:border-0">
+                <td class="py-1.5 pr-3 text-ink-strong">{{ valor.label }}</td>
+                <td class="py-1.5 text-right font-semibold tabular-nums text-primary">
+                  {{ valor.value | number: '1.1-1' }}
+                  @if (valor.unit) {
+                    <span class="ml-0.5 font-normal text-muted">{{ valor.unit }}</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    } @else {
+      <!-- É por isto que `status` existe: sem ele a tela teria que interpretar o
+           texto para saber se mostra um achado ou a razão de não haver achado. -->
+      <p class="flex items-start gap-2 rounded-xl bg-slate-50 px-3 py-2 text-sm text-muted">
+        <svg
+          [lucideIcon]="'info'"
+          class="mt-0.5 h-4 w-4 shrink-0 text-accent"
+          aria-hidden="true"
+        ></svg>
+        <span>{{ resultado.summary }}</span>
+      </p>
+    }
+  </article>
+}

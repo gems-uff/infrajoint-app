@@ -1,0 +1,183 @@
+<main
+  class="flex min-h-screen items-center justify-center bg-[#F5F7FA] p-4 sm:p-6 lg:p-8 text-ink-strong"
+>
+  <div
+    class="grid w-full max-w-6xl overflow-hidden rounded-[24px] bg-white shadow-[0_30px_80px_rgba(27,58,87,0.12)] lg:grid-cols-2"
+  >
+    <!-- Left: login form -->
+    <section class="flex flex-col px-6 py-4 sm:px-12 sm:py-14 lg:px-16">
+      <div class="mx-auto w-full max-w-md">
+        <a routerLink="/" aria-label="Ir para a pagina inicial da InfraJoint" class="inline-flex">
+          <img
+            ngSrc="assets/images/logo.png"
+            width="500"
+            height="500"
+            priority
+            alt="InfraJoint"
+            class="h-14 w-auto object-contain"
+          />
+        </a>
+      </div>
+
+      <div class="flex flex-1 flex-col justify-center py-4">
+        <div class="mx-auto w-full max-w-md">
+          <h1 class="text-3xl font-bold tracking-tight text-primary sm:text-4xl">Bem-Vindo!</h1>
+          <p class="mt-3 text-base leading-7 text-muted lg:whitespace-nowrap">
+            Acesse sua conta para continuar utilizando a plataforma.
+          </p>
+
+          <form [formGroup]="form" (ngSubmit)="onSubmit()" class="mt-9 space-y-5" novalidate>
+            <div>
+              <label for="email" class="mb-1.5 block text-sm font-medium text-secondary">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                formControlName="email"
+                autocomplete="email"
+                placeholder="seu@email.com"
+                class="auth-input"
+              />
+            </div>
+
+            <div>
+              <label for="password" class="mb-1.5 block text-sm font-medium text-secondary">
+                Senha
+              </label>
+              <div class="relative">
+                <input
+                  id="password"
+                  [type]="showPassword() ? 'text' : 'password'"
+                  formControlName="password"
+                  autocomplete="current-password"
+                  placeholder="••••••••"
+                  class="auth-input pr-12"
+                />
+                <button
+                  type="button"
+                  (click)="togglePassword()"
+                  [attr.aria-label]="showPassword() ? 'Ocultar senha' : 'Mostrar senha'"
+                  class="absolute inset-y-0 right-0 flex cursor-pointer items-center px-4 text-muted transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                >
+                  @if (showPassword()) {
+                    <svg
+                      class="h-5 w-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                      <path
+                        d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"
+                      />
+                      <path
+                        d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"
+                      />
+                      <line x1="2" y1="2" x2="22" y2="22" />
+                    </svg>
+                  } @else {
+                    <svg
+                      class="h-5 w-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  }
+                </button>
+              </div>
+              <div class="mt-2 flex justify-end">
+                <a
+                  routerLink="."
+                  class="text-sm font-medium text-accent transition-colors hover:text-brand-700 focus-visible:rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                >
+                  Esqueceu a Senha?
+                </a>
+              </div>
+            </div>
+
+            @if (errorMessage(); as message) {
+              <p class="text-sm font-medium text-red-600" role="alert">{{ message }}</p>
+            }
+
+            <button
+              type="submit"
+              [disabled]="submitting()"
+              class="btn-primary h-12 w-full cursor-pointer text-base shadow-[0_10px_30px_rgba(50,181,254,0.28)] hover:-translate-y-0.5 hover:shadow-[0_14px_36px_rgba(50,181,254,0.36)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {{ submitting() ? 'Entrando…' : 'Entrar' }}
+            </button>
+          </form>
+
+          <div class="mt-6 flex items-center gap-4" aria-hidden="true">
+            <span class="h-px flex-1 bg-black/10"></span>
+            <span class="text-xs font-medium uppercase tracking-wider text-muted">ou</span>
+            <span class="h-px flex-1 bg-black/10"></span>
+          </div>
+
+          <button
+            type="button"
+            (click)="signInWithGoogle()"
+            [disabled]="submitting()"
+            class="mt-6 flex h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-xl border border-black/10 bg-white text-base font-medium text-ink-strong transition-colors hover:bg-[#F5F7FA] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <svg class="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1Z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38Z"
+              />
+            </svg>
+            Continuar com Google
+          </button>
+
+          <p class="mt-8 text-center text-sm text-muted">
+            Ainda não tem uma conta?
+            <a
+              routerLink="/register"
+              class="font-semibold text-accent transition-colors hover:text-brand-700 focus-visible:rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              Criar conta
+            </a>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right: illustration panel -->
+    <aside class="hidden p-3 lg:block">
+      <div class="relative h-full w-full overflow-hidden rounded-[24px] bg-surface">
+        <img
+          ngSrc="assets/illustrations/login3.png"
+          fill
+          priority
+          sizes="50vw"
+          alt="Ilustração de acesso à plataforma InfraJoint"
+          class="object-cover object-center"
+        />
+      </div>
+    </aside>
+  </div>
+</main>

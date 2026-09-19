@@ -1,0 +1,49 @@
+<section id="hero" class="page-container pt-8 sm:pt-6">
+  <div
+    #heroSection
+    class="hero-shell"
+  >
+    <img
+      #heroBackground
+      ngSrc="assets/images/backgroundhome.png"
+      alt=""
+      aria-hidden="true"
+      fill
+      priority
+      sizes="100vw"
+      class="hero-background"
+    />
+
+    <div class="absolute inset-0 -z-10 bg-hero-overlay/60"></div>
+    <div class="absolute inset-0 -z-10 bg-gradient-to-r from-hero/80 via-hero/48 to-hero/10"></div>
+
+    <div #heroContent class="flex max-w-3xl flex-col justify-center text-white">
+      <p
+        class="hero-eyebrow"
+      >
+        Pesquisa e inovação em reumatologia
+      </p>
+
+      <h1
+        class="mt-5 max-w-4xl text-balance text-3xl font-semibold leading-tight sm:mt-7 sm:text-4xl lg:text-5xl lg:leading-[1.08]"
+      >
+        Análise Termográfica para Pesquisa em Reumatologia
+      </h1>
+
+      <p class="mt-6 max-w-[460px] text-base leading-8 text-white/85 sm:text-base">
+        Conectando imagens termográficas, métodos computacionais e dados clínicos em um único
+        ambiente de pesquisa.
+      </p>
+
+      <div class="mt-8 flex flex-wrap items-center gap-4 sm:mt-10">
+        <a
+          routerLink="/"
+          fragment="sobre"
+          class="btn-secondary hero-cta"
+        >
+          Conhecer a plataforma
+        </a>
+      </div>
+    </div>
+  </div>
+</section>

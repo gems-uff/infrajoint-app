@@ -1,0 +1,31 @@
+<section class="analysis-section relative isolate overflow-hidden pb-26 pt-21">
+  <div class="analysis-glow" aria-hidden="true"></div>
+
+  <div class="page-container relative">
+    <div class="analysis-header mx-auto text-center">
+      <h2
+        class="section-title text-[length:clamp(1.125rem,6.5vw,2rem)] leading-tight sm:text-4xl lg:text-5xl"
+      >
+        Fluxo de <span class="text-accent">Aquisição e Análise</span>
+      </h2>
+      <p class="section-subtitle mx-auto mt-5 max-w-2xl text-pretty">
+        Protocolo de aquisição de imagens térmicas em 6 etapas estruturadas, desde a preparação do
+        ambiente até a coleta de dados clínicos.
+      </p>
+    </div>
+
+    <div class="analysis-card">
+      <app-phase-filter [activeFilter]="activeFilter()" (filterChange)="onFilterChange($event)" />
+
+      @if (steps().length === 0) {
+        <p class="empty-state">Nenhuma etapa encontrada.</p>
+      } @else {
+        <div class="analysis-list">
+          @for (step of steps(); track step.id; let first = $first; let last = $last) {
+            <app-step-card [step]="step" [isFirst]="first" [isLast]="last" />
+          }
+        </div>
+      }
+    </div>
+  </div>
+</section>
