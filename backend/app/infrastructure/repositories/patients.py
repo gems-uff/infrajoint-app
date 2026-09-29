@@ -11,13 +11,19 @@ import asyncpg
 from app.domain.entities import Diagnosis, NewPatient, Patient, Sex, StudyGroup
 from app.domain.errors import ConflictError
 
-# O índice único da migration `patients_sem_duplicado`: (owner_id, nome normalizado,
-# birth_date). Violá-lo é erro de fluxo do cliente, não falha interna — traduzir aqui
-# é o que evita que ele suba como 500 com nome de índice dentro.
-_INDICE_DUPLICATA = "patients_sem_duplicado"
-_MENSAGEM_DUPLICATA = (
-    "já existe um paciente com este nome e esta data de nascimento no seu cadastro"
-)
+# As duas regras de unicidade do paciente, pelo nome que chega em `constraint_name`:
+# o índice da migration `patients_sem_duplicado`, por dono, e o trigger de
+# `acervo_sem_duplicado`, que estende a mesma regra aos pares do acervo de pesquisa.
+# Violá-las é erro de fluxo do cliente, não falha interna — traduzir aqui é o que evita
+# que subam como 500 com nome de índice dentro.
+_MENSAGENS_DUPLICATA = {
+    "patients_sem_duplicado": (
+        "já existe um paciente com este nome e esta data de nascimento no seu cadastro"
+    ),
+    "patients_sem_duplicado_no_acervo": (
+        "já existe um paciente com este nome e esta data de nascimento no acervo de pesquisa"
+    ),
+}
 
 _COLUMNS = """
     id, owner_id, full_name, birth_date, sex,
@@ -131,10 +137,9 @@ class PostgresPatientRepository:
         cadastro da mesma pessoa, e num acervo compartilhado o cadastro que já existe
         costuma ser o de outra pessoa da equipe.
 
-        O índice único continua sendo por dono (`patients_sem_duplicado`), então o
-        homônimo de um par não é RECUSADO pelo banco, só avisado aqui. É a diferença
-        entre as duas camadas, e ela é assumida: dois pesquisadores podem mesmo
-        precisar de cadastros próprios do mesmo paciente.
+        Com a mesma data de nascimento, o banco recusa o homônimo do par como recusa o
+        do próprio dono: o trigger `patients_sem_duplicado_no_acervo` usa este mesmo
+        `can_curate`, então o recorte do aviso e o da recusa são um só.
 
         A comparação passa pela `app.normalized_name()` do índice único, então o que a
         tela avisa e o que o banco recusa são a mesma noção de "mesmo nome".
@@ -237,8 +242,8 @@ class PostgresPatientRepository:
             for value in colunas.values()
         ]
 
-        # A edição também esbarra no índice: renomear um paciente para o nome e a data
-        # de outro é a mesma duplicata, chegando pelo outro caminho.
+        # A edição também esbarra nas duas regras: renomear um paciente para o nome e a
+        # data de outro é a mesma duplicata, chegando pelo outro caminho.
         #
         # O RETURNING traz as colunas de leitura, e não as cruas como no INSERT: quem
         # edita nem sempre é o dono desde o acervo de pesquisa, e devolver `can_delete`
@@ -266,7 +271,6 @@ class PostgresPatientRepository:
 
 
 def _conflito(exc: asyncpg.UniqueViolationError) -> Exception:
-    """Traduz a violação do índice; qualquer outra continua subindo como está."""
-    if exc.constraint_name == _INDICE_DUPLICATA:
-        return ConflictError(_MENSAGEM_DUPLICATA)
-    return exc
+    """Traduz a violação das regras de duplicata; qualquer outra sobe como está."""
+    mensagem = _MENSAGENS_DUPLICATA.get(exc.constraint_name or "")
+    return ConflictError(mensagem) if mensagem else exc

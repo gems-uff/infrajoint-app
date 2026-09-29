@@ -2,10 +2,10 @@ import { LEGAL_CONTACT_EMAIL } from './legal-contact';
 import { LegalSection } from './legal-document.model';
 
 /** Machine-readable date for the `<time>` element. */
-export const TERMS_OF_USE_LAST_UPDATED_ISO = '2026-09-03';
+export const TERMS_OF_USE_LAST_UPDATED_ISO = '2026-09-28';
 
 /** Human-readable date shown to the user. */
-export const TERMS_OF_USE_LAST_UPDATED = '3 de setembro de 2026';
+export const TERMS_OF_USE_LAST_UPDATED = '28 de setembro de 2026';
 
 /**
  * Content of the terms of use, in the same section format as the privacy
@@ -18,7 +18,7 @@ export const TERMS_OF_USE_SECTIONS: LegalSection[] = [
     blocks: [
       {
         kind: 'paragraph',
-        text: 'Estes Termos de Uso regulam o acesso e a utilização da plataforma InfraJoint. Ao criar uma conta ou utilizar a plataforma, você concorda integralmente com as condições descritas neste documento.',
+        text: 'Estes Termos de Uso regulam o acesso e a utilização da plataforma InfraJoint. Ao criar uma conta ou utilizar a plataforma, você concorda integralmente com as condições descritas neste documento, disponível a qualquer momento pelo rodapé da página inicial.',
       },
       {
         kind: 'paragraph',
@@ -36,7 +36,7 @@ export const TERMS_OF_USE_SECTIONS: LegalSection[] = [
       },
       {
         kind: 'paragraph',
-        text: 'A plataforma permite carregar imagens térmicas e arquivos de temperatura, executar análises no próprio navegador e organizar informações de pesquisa. Trata-se de um projeto acadêmico em evolução, oferecido sem custo para fins de estudo e pesquisa.',
+        text: 'A plataforma permite cadastrar pacientes e registrar consultas, carregar imagens térmicas e arquivos de temperatura, analisá-los no próprio navegador e executar algoritmos de pesquisa sobre as medições registradas. Trata-se de um projeto acadêmico em evolução, oferecido sem custo para fins de estudo e pesquisa.',
       },
     ],
   },
@@ -104,6 +104,10 @@ export const TERMS_OF_USE_SECTIONS: LegalSection[] = [
           {
             label: 'Uso lícito',
             text: 'não utilizar a plataforma para finalidades ilegais, para violar direitos de terceiros ou de forma contrária a estes termos.',
+          },
+          {
+            label: 'Relatórios exportados',
+            text: 'guardar com cuidado os relatórios da consulta que você exportar em PDF. Eles contêm dados sensíveis do paciente, como nome, data de nascimento, diagnósticos e imagens, e, depois de baixados, ficam fora da proteção da plataforma. A guarda e o compartilhamento desses arquivos são de sua responsabilidade, e eles só devem ser enviados a quem tenha direito de acessá-los, como o próprio paciente ou a equipe do estudo.',
           },
           {
             label: 'Interpretação dos resultados',
@@ -186,7 +190,7 @@ export const TERMS_OF_USE_SECTIONS: LegalSection[] = [
       },
       {
         kind: 'paragraph',
-        text: 'As análises são processadas no seu navegador e não são armazenadas pela plataforma: exporte os resultados que precisar preservar antes de encerrar a sessão.',
+        text: 'Nas ferramentas avulsas, o analisador de imagens e o mapa corporal, os resultados existem apenas durante a sessão no seu navegador e não são armazenados pela plataforma. Para preservar uma análise, registre-a em uma consulta, pelo fluxo de análise térmica, disponível para os perfis que registram consultas. Nesse caso, ela fica armazenada enquanto a consulta existir, conforme a Política de Privacidade.',
       },
     ],
   },

@@ -52,8 +52,9 @@ class CreatePatient:
 
         No acervo de pesquisa o aviso alcança os pacientes dos pares (ver
         `find_by_name`), e é lá que ele rende mais: o cadastro que já existe costuma
-        ser o de outra pessoa da equipe. O índice único, esse continua por dono, então
-        o homônimo de um par é avisado e não recusado.
+        ser o de outra pessoa da equipe. A recusa alcança os mesmos pacientes, pelo
+        trigger `patients_sem_duplicado_no_acervo`: nome e data iguais aos de um par
+        não entram nem confirmados.
         """
         if not user.is_clinician:
             raise ForbiddenError("apenas médicos e administradores criam pacientes")

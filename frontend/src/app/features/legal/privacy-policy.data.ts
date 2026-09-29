@@ -2,17 +2,18 @@ import { LEGAL_CONTACT_EMAIL } from './legal-contact';
 import { LegalSection } from './legal-document.model';
 
 /** Machine-readable date for the `<time>` element. */
-export const PRIVACY_POLICY_LAST_UPDATED_ISO = '2026-09-05';
+export const PRIVACY_POLICY_LAST_UPDATED_ISO = '2026-09-27';
 
 /** Human-readable date shown to the user. */
-export const PRIVACY_POLICY_LAST_UPDATED = '5 de setembro de 2026';
+export const PRIVACY_POLICY_LAST_UPDATED = '27 de setembro de 2026';
 
 /**
  * Content of the privacy policy, kept as data so the page, the table of
  * contents and the anchors stay derived from a single source of truth.
  *
  * The text describes how the platform actually behaves today: authentication
- * and profile data live in Supabase; analysis always runs in the browser, but the
+ * and profile data live in Supabase; image analysis always runs in the browser (the
+ * research algorithms run on the API, over the recorded measurements), but the
  * capture files of an analysis attached to an encounter are stored in a private
  * Cloudflare R2 bucket, while the standalone analyzer keeps everything in memory.
  *
@@ -38,7 +39,7 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
       },
       {
         kind: 'paragraph',
-        text: 'Ao criar uma conta e utilizar o InfraJoint, você declara ter lido e compreendido as práticas descritas neste documento.',
+        text: 'Esta política fica disponível a qualquer momento pelo rodapé da página inicial da plataforma, e recomendamos a sua leitura antes de criar uma conta.',
       },
     ],
   },
@@ -91,8 +92,8 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
       },
       {
         kind: 'note',
-        title: 'Você é o controlador desses dados',
-        text: 'Sobre os pacientes que você cadastra, a plataforma atua como operadora: guardamos e disponibilizamos as informações seguindo as suas instruções. A decisão de coletar, usar e por quanto tempo manter é sua, e com ela a responsabilidade pela base legal, pelo consentimento dos participantes e pela aprovação do comitê de ética.',
+        title: 'Você, ou a instituição em nome da qual você atua, é o controlador desses dados',
+        text: 'Sobre os pacientes que você cadastra, a plataforma atua como operadora: guardamos e disponibilizamos as informações seguindo as instruções do controlador. O controlador é você, quando atua em nome próprio, como profissional liberal, ou a instituição em nome da qual você atua, como o hospital, a clínica ou a universidade responsável pelo estudo. A decisão de coletar, usar e por quanto tempo manter cabe ao controlador, e com ela a responsabilidade pela base legal, pelo consentimento dos participantes e pela aprovação do comitê de ética.',
       },
       {
         kind: 'paragraph',
@@ -172,7 +173,7 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
       {
         kind: 'note',
         title: 'O que cabe a você, como pesquisador',
-        text: 'Imagens de pacientes são dados sensíveis de saúde. Cabe a você garantir a base legal, o consentimento do participante e a anonimização dos arquivos. E como o bucket fica fora do Brasil, o armazenamento caracteriza transferência internacional de dados (arts. 33 a 36 da LGPD): informe isso ao participante de forma destacada no termo de consentimento do estudo.',
+        text: 'Imagens de pacientes são dados sensíveis de saúde. Cabe ao controlador, você ou a instituição em nome da qual você atua, garantir a base legal, o consentimento do participante e a anonimização dos arquivos. E como o bucket fica fora do Brasil, o armazenamento caracteriza transferência internacional de dados (arts. 33 a 36 da LGPD): informe isso ao participante de forma destacada no termo de consentimento do estudo.',
       },
     ],
   },
@@ -216,7 +217,7 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
       {
         kind: 'note',
         title: 'Não treinamos modelos de inteligência artificial com esses dados',
-        text: 'As imagens termográficas, as fotografias, os arquivos de temperatura e os dados clínicos dos pacientes são usados exclusivamente para executar as operações que você solicita na plataforma. Não os utilizamos para treinar, ajustar ou avaliar modelos de inteligência artificial, não os incorporamos a conjuntos de dados para essa finalidade e não os cedemos a terceiros que o façam. Os algoritmos de análise da plataforma são determinísticos, rodam dentro do seu navegador e não aprendem com o material processado.',
+        text: 'As imagens termográficas, as fotografias, os arquivos de temperatura e os dados clínicos dos pacientes são usados exclusivamente para executar as operações que você solicita na plataforma. Não os utilizamos para treinar, ajustar ou avaliar modelos de inteligência artificial, não os incorporamos a conjuntos de dados para essa finalidade e não os cedemos a terceiros que o façam. O processamento das imagens acontece no seu navegador. Os algoritmos de pesquisa, por sua vez, são executados na nossa API sobre as medições já registradas, como a temperatura de cada articulação, e nunca sobre as imagens. Todos são determinísticos, não aprendem com o material processado e não guardam os resultados que calculam.',
       },
       {
         kind: 'paragraph',
@@ -259,7 +260,7 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
       },
       {
         kind: 'paragraph',
-        text: 'As hipóteses acima dizem respeito aos seus dados de usuário. Para os dados de saúde dos pacientes que você registra, a base legal é definida por você, na condição de controlador, entre as hipóteses do art. 11 da LGPD, tipicamente o consentimento específico do titular ou a tutela da saúde. A plataforma trata esses dados apenas para executar as operações que você solicita.',
+        text: 'As hipóteses acima dizem respeito aos seus dados de usuário. Para os dados de saúde dos pacientes que você registra, a base legal é definida pelo controlador, você ou a instituição em nome da qual você atua, entre as hipóteses do art. 11 da LGPD, tipicamente o consentimento específico do titular ou a tutela da saúde. A plataforma trata esses dados apenas para executar as operações que você solicita.',
       },
     ],
   },
@@ -292,7 +293,7 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
           },
           {
             label: 'Render',
-            text: 'hospedagem da API que intermedeia os registros clínicos e assina as URLs de acesso aos arquivos.',
+            text: 'hospedagem da API que intermedeia os registros clínicos, assina as URLs de acesso aos arquivos e executa os algoritmos de pesquisa sobre as medições registradas.',
           },
         ],
       },
@@ -341,7 +342,7 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
       },
       {
         kind: 'paragraph',
-        text: 'Parte dos provedores mantém servidores fora do Brasil. Em particular, as imagens e os arquivos de temperatura das análises ficam em um bucket da Cloudflare R2 hospedado na América do Norte, sem restrição de jurisdição configurada. Essas transferências internacionais observam os requisitos dos arts. 33 a 36 da LGPD, e para os dados de pacientes a base que as autoriza é definida por você, na condição de controlador, conforme descrito na seção sobre imagens.',
+        text: 'Parte dos provedores mantém servidores fora do Brasil. Em particular, as imagens e os arquivos de temperatura das análises ficam em um bucket da Cloudflare R2 hospedado na América do Norte, sem restrição de jurisdição configurada, e a API que recebe os registros clínicos e executa os algoritmos de pesquisa é hospedada nos Estados Unidos. O banco de dados e o serviço de autenticação ficam no Brasil. Essas transferências internacionais observam os requisitos dos arts. 33 a 36 da LGPD, e para os dados de pacientes a base que as autoriza é definida pelo controlador, conforme descrito na seção sobre imagens.',
       },
       {
         kind: 'paragraph',
@@ -427,7 +428,7 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
       },
       {
         kind: 'paragraph',
-        text: 'Se você é paciente e quer exercer esses direitos sobre os seus dados registrados na plataforma, procure o profissional de saúde ou o pesquisador responsável pelo seu atendimento: é ele quem controla esses registros e quem pode acessá-los, corrigi-los ou excluí-los. Recebendo um pedido desse tipo, nós o encaminharemos ao profissional responsável.',
+        text: 'Se você é paciente e quer exercer esses direitos sobre os seus dados registrados na plataforma, procure o profissional de saúde ou o pesquisador responsável pelo seu atendimento. O controlador desses registros é ele, quando atua em nome próprio, ou a instituição em nome da qual ele atua, e na plataforma é ele quem pode acessá-los, corrigi-los ou excluí-los. Recebendo um pedido desse tipo, nós o encaminharemos ao profissional responsável.',
       },
     ],
   },
@@ -438,10 +439,6 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text: 'O acesso à plataforma é destinado a pesquisadores e profissionais de saúde maiores de 18 anos. Não coletamos intencionalmente dados de crianças e adolescentes como usuários do sistema.',
-      },
-      {
-        kind: 'paragraph',
-        text: 'Quando a pesquisa envolver participantes menores de idade, o consentimento específico dos pais ou responsáveis e a aprovação do comitê de ética competente são responsabilidade do pesquisador, nos termos do art. 14 da LGPD.',
       },
     ],
   },

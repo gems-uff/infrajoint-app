@@ -853,3 +853,115 @@ async def test_admin_le_o_acervo_de_pesquisa_e_nao_escreve_nele(client: tuple[An
 
     edicao = await http.patch(f"/patients/{paciente['id']}", json={"phone": "11888888888"})
     assert edicao.status_code == 403, edicao.text
+
+
+async def test_homonimo_do_par_com_a_mesma_data_o_banco_recusa(client: tuple[Any, dict]) -> None:
+    """O cadastro duplicado que o acervo deixava passar.
+
+    O índice único é por dono, e P2 confirmava o aviso e criava um segundo cadastro
+    da mesma pessoa. No acervo o cadastro de P1 já é de P2 para editar, então a
+    confirmação vale o que vale entre dois pacientes do próprio P2: só passa com outra
+    data de nascimento.
+    """
+    http, acting = client
+
+    acting["user_id"] = PESQUISADOR_1
+    existente = await _criar_paciente(http, "API-TEST Maria Silva", "1980-03-12")
+
+    acting["user_id"] = PESQUISADOR_2
+    aviso = await http.post(
+        "/patients", json={"full_name": "API-TEST Maria Silva", "birth_date": "1980-03-12"}
+    )
+    assert aviso.status_code == 409, aviso.text
+    [homonimo] = aviso.json()["duplicates"]
+    assert homonimo["id"] == existente["id"]
+    assert homonimo["owner_name"] == "Pesquisadora API P1"
+
+    # A mesma normalização do índice: acento, caixa e espaço não fazem pessoa nova.
+    negado = await http.post(
+        "/patients?allow_duplicate=true",
+        json={"full_name": "  api-test  maría   SILVA ", "birth_date": "1980-03-12"},
+    )
+    assert negado.status_code == 409, negado.text
+    assert "acervo de pesquisa" in negado.json()["detail"]
+    assert "duplicates" not in negado.json(), "a recusa do banco não é mais a pergunta"
+
+    outra_pessoa = await http.post(
+        "/patients?allow_duplicate=true",
+        json={"full_name": "API-TEST Maria Silva", "birth_date": "1991-07-30"},
+    )
+    assert outra_pessoa.status_code == 201, outra_pessoa.text
+
+
+async def test_editar_para_o_nome_do_paciente_do_par_vira_409(client: tuple[Any, dict]) -> None:
+    """A duplicata do pool também chega pela edição, pelos dois lados.
+
+    P2 renomeando o próprio paciente para o de P1, e P2 renomeando o paciente de P1
+    para o dele: nos dois casos os donos diferem, e só o trigger pega.
+    """
+    http, acting = client
+
+    acting["user_id"] = PESQUISADOR_1
+    de_p1 = await _criar_paciente(http, "API-TEST Paciente de P1")
+
+    acting["user_id"] = PESQUISADOR_2
+    de_p2 = await _criar_paciente(http, "API-TEST Paciente de P2")
+
+    renomear_o_meu = await http.patch(
+        f"/patients/{de_p2['id']}", json={"full_name": de_p1["full_name"]}
+    )
+    assert renomear_o_meu.status_code == 409, renomear_o_meu.text
+
+    renomear_o_do_par = await http.patch(
+        f"/patients/{de_p1['id']}", json={"full_name": de_p2["full_name"]}
+    )
+    assert renomear_o_do_par.status_code == 409, renomear_o_do_par.text
+
+
+async def test_paciente_de_medico_nao_barra_o_pesquisador(client: tuple[Any, dict]) -> None:
+    """A regra nova é do acervo, e o médico não está nele: entre os dois nada mudou."""
+    http, acting = client
+
+    acting["user_id"] = MEDICO_A
+    await _criar_paciente(http, "API-TEST Homônima de fora do pool")
+
+    acting["user_id"] = PESQUISADOR_1
+    criado = await http.post(
+        "/patients",
+        json={"full_name": "API-TEST Homônima de fora do pool", "birth_date": _NASCIMENTO},
+    )
+    assert criado.status_code == 201, criado.text
+
+
+async def test_duplicata_trazida_por_promocao_nao_trava_a_edicao(
+    client: tuple[Any, dict],
+) -> None:
+    """Quem entra no pool pode trazer um paciente igual a um que já está lá.
+
+    O trigger não olha para trás: recusa a próxima duplicata, não as que já existem.
+    Sem a saída para UPDATE que não muda nome nem data, a tela de edição, que manda o
+    formulário inteiro, deixaria os dois cadastros travados até para trocar o telefone.
+    """
+    import asyncpg
+
+    from tests.conftest import LOCAL_ADMIN_DSN
+
+    http, acting = client
+
+    acting["user_id"] = MEDICO_B
+    await _criar_paciente(http, "API-TEST Trazida pela promoção")
+
+    acting["user_id"] = PESQUISADOR_1
+    do_pool = await _criar_paciente(http, "API-TEST Trazida pela promoção")
+
+    admin = await asyncpg.connect(LOCAL_ADMIN_DSN, timeout=5)
+    try:
+        await admin.execute("UPDATE public.users SET role = 'pesquisador' WHERE id = $1", MEDICO_B)
+        edicao = await http.patch(
+            f"/patients/{do_pool['id']}",
+            json={"full_name": do_pool["full_name"], "phone": "21977776666"},
+        )
+        assert edicao.status_code == 200, edicao.text
+    finally:
+        await admin.execute("UPDATE public.users SET role = 'medico' WHERE id = $1", MEDICO_B)
+        await admin.close()
