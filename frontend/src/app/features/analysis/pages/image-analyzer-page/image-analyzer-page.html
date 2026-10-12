@@ -1097,7 +1097,7 @@
       @if (uploadMode() === 'sequence') {
         <!-- Importação em lote da sequência -->
         <section class="mt-6" aria-label="Importação da sequência">
-          <app-sequence-import (enter)="enterSequenceAnalysis()" />
+          <app-sequence-import [embedded]="embedded()" (enter)="enterSequenceAnalysis()" />
         </section>
       } @else {
       <!-- Uploads -->
@@ -1183,13 +1183,17 @@
             <span class="text-xs font-medium text-primary">Temperaturas</span>
           </li>
         </ol>
-        <p class="mx-auto mt-6 flex max-w-xl items-start justify-center gap-2 text-center text-sm text-muted">
-          <svg [lucideIcon]="'shield-check'" class="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true"></svg>
-          <span>
-            Todo o processamento é realizado localmente no navegador.
-Nenhuma imagem ou dado é enviado para servidores.
-          </span>
-        </p>
+        <!-- Só na ferramenta avulsa: na consulta, os arquivos e as medições são
+             enviados quando ela é finalizada. -->
+        @if (!embedded()) {
+          <p class="mx-auto mt-6 flex max-w-xl items-start justify-center gap-2 text-center text-sm text-muted">
+            <svg [lucideIcon]="'shield-check'" class="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true"></svg>
+            <span>
+              Todo o processamento é realizado localmente no navegador.
+              Nenhuma imagem ou dado é enviado para servidores.
+            </span>
+          </p>
+        }
       </section>
 
       <!-- CTA -->
@@ -1356,10 +1360,12 @@ Nenhuma imagem ou dado é enviado para servidores.
             </div>
           </section>
 
-          <p class="flex items-start gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs text-muted">
-            <svg [lucideIcon]="'shield-check'" class="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true"></svg>
-            <span>Todo o processamento é feito localmente no navegador, nenhuma imagem ou dado é enviado a servidores.</span>
-          </p>
+          @if (!embedded()) {
+            <p class="flex items-start gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs text-muted">
+              <svg [lucideIcon]="'shield-check'" class="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true"></svg>
+              <span>Todo o processamento é feito localmente no navegador, nenhuma imagem ou dado é enviado a servidores.</span>
+            </p>
+          }
         </div>
 
         <footer class="flex justify-end border-t border-gray-100 px-6 py-3">

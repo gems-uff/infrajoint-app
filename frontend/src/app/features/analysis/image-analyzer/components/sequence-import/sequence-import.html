@@ -62,8 +62,13 @@
       <svg [lucideIcon]="'shield-check'" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true"></svg>
       <span>
         Ao selecionar a pasta, o navegador exibirá um aviso de segurança perguntando se deseja
-        "enviar" os arquivos. É apenas a permissão de leitura local: nada é enviado a servidores,
-        todo o processamento acontece no seu navegador.
+        "enviar" os arquivos.
+        @if (embedded()) {
+          É apenas a permissão de leitura local, e todo o processamento acontece no seu navegador.
+        } @else {
+          É apenas a permissão de leitura local: nada é enviado a servidores, todo o processamento
+          acontece no seu navegador.
+        }
       </span>
     </p>
     @if (sequence.error(); as err) {

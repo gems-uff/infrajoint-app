@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { LucideDynamicIcon } from '@lucide/angular';
 
 import { SequenceService } from '../../sequence.service';
@@ -19,6 +27,12 @@ import { formatSeconds, isCompleteCapture } from '../../sequence.model';
 })
 export class SequenceImport {
   protected readonly sequence = inject(SequenceService);
+
+  /**
+   * Inside a consultation the files are uploaded when it is finalized, so the
+   * "nothing is sent to servers" reassurance only holds for the standalone tool.
+   */
+  readonly embedded = input(false);
 
   /** The processed sequence should open in the analyzer. */
   readonly enter = output<void>();
