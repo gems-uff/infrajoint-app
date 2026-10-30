@@ -25,6 +25,12 @@ describe('joint catalog', () => {
     expect(count('pip')).toBe(10);
     expect(count('knee')).toBe(2);
   });
+
+  it('names the thumb interphalangeal IF, since the thumb has no distal one', () => {
+    expect(JOINT_BY_ID.get('RIGHT_PIP_1')?.shortLabel).toBe('IF 1');
+    expect(JOINT_BY_ID.get('LEFT_PIP_1')?.label).toBe('IF/IP 1 (mão esquerda)');
+    expect(JOINT_BY_ID.get('RIGHT_PIP_2')?.shortLabel).toBe('IFP 2');
+  });
 });
 
 describe('body & hand hotspots', () => {
@@ -45,6 +51,13 @@ describe('body & hand hotspots', () => {
   it('every hotspot references a joint that exists in the catalog', () => {
     for (const id of [...bodyJointIds, ...handJointIds]) {
       expect(JOINT_BY_ID.has(id)).toBe(true);
+    }
+  });
+
+  it("puts the patient's right side on the viewer's left, as when facing the patient", () => {
+    for (const spot of BODY_HOTSPOTS) {
+      const side = spot.kind === 'hand' ? spot.side : JOINT_BY_ID.get(spot.jointId)?.side;
+      expect(spot.xPct < 50).toBe(side === 'right');
     }
   });
 

@@ -1,4 +1,12 @@
-"""Assimetria térmica entre as mãos, articulação por articulação, na imagem estática.
+"""Diferença de temperatura média entre as mãos, articulação por articulação, na imagem
+estática.
+
+O nome diz o cálculo, e não a conclusão. Já se chamou "Assimetria térmica", e o médico
+parceiro, no teste de usabilidade, apontou os dois problemas: o nome não dizia qual das
+três temperaturas da região era comparada (é a média, e não a mínima nem a máxima), e
+"assimetria" é a interpretação que o médico pode tirar ou não da diferença, e não o que
+o algoritmo mede. O slug e o módulo continuam com o nome antigo porque são identificadores,
+e nenhum dos dois aparece na tela.
 
 Compara cada articulação com a sua correspondente do outro lado. É por articulação, e
 não pela média da mão, porque inflamação articular é focal: uma MCP com 1,4 °C de
@@ -212,13 +220,15 @@ def _origem(captura: _Captura, posicao: int, total: int) -> str | None:
 
 class ThermalAsymmetry:
     slug = "assimetria-termica-estatica"
-    title = "Assimetria térmica (imagem estática)"
+    title = "Diferença de temperatura média entre as mãos (imagem estática)"
     scope = AlgorithmScope.ENCOUNTER
     description = (
-        "Compara cada articulação com a correspondente do outro lado numa imagem "
-        "estática, as mãos num instante, em repouso, e reporta as diferenças de "
-        "temperatura da maior para a menor. Numa sequência, usa a primeira captura "
-        "com medição."
+        "Para cada articulação, subtrai a temperatura média da região numa mão da "
+        "temperatura média da mesma região na outra mão e lista as diferenças, em °C, "
+        "da maior para a menor, dizendo qual mão está mais quente. Usa só a média de "
+        "cada região, e não a mínima nem a máxima. A leitura é estática, das mãos num "
+        "instante, em repouso, e numa sequência usa a primeira captura com medição. O "
+        "resultado é a diferença medida, e cabe ao médico interpretá-la."
     )
 
     def run(self, rows: Sequence[Observation]) -> AlgorithmResult:
@@ -239,7 +249,7 @@ class ThermalAsymmetry:
             return AlgorithmResult(
                 status=AlgorithmStatus.INSUFFICIENT_DATA,
                 summary=(
-                    "Não há captura analisada: não há medição sobre a qual calcular assimetria."
+                    "Não há captura analisada: não há medição sobre a qual calcular diferenças."
                 ),
             )
 
@@ -252,7 +262,7 @@ class ThermalAsymmetry:
                     f"Nenhum par pôde ser comparado. {_frases_de_descarte(descartados)}"
                     if descartados
                     else "Não há articulação detectada nas duas mãos: sem par "
-                    "correspondente, não há assimetria a calcular."
+                    "correspondente, não há diferença a calcular."
                 ),
             )
 
@@ -262,9 +272,10 @@ class ThermalAsymmetry:
         # Só contagens no texto, nenhum número com casa decimal, porque formatar é
         # trabalho da tela. Os valores vão em `values`, como números.
         frases = [
-            "Nenhuma diferença de temperatura entre as mãos nos pares comparados."
+            "Nenhuma diferença de temperatura média entre as mãos nos pares comparados."
             if lado_do_maior is None
-            else f"Maior diferença na {maior.label}, com a mão {lado_do_maior} mais quente.",
+            else f"Maior diferença de temperatura média na {maior.label}, "
+            f"com a mão {lado_do_maior} mais quente.",
             f"{len(pares)} {'par comparado' if len(pares) == 1 else 'pares comparados'}."
             + (f" {_frases_de_descarte(descartados)}" if descartados else ""),
         ]

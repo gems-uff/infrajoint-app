@@ -35,10 +35,14 @@ function handJoints(side: BodySide): JointDefinition[] {
       side,
       group: 'mcp',
     });
+    // The thumb has a single interphalangeal joint, so it is IF/IP and not
+    // IFP/PIP: there is no distal one for "proximal" to tell apart. The id keeps
+    // `PIP_1` because it is identity, shared with the database and the indices.
+    const abbreviation = digit === 1 ? { pt: 'IF', en: 'IP' } : { pt: 'IFP', en: 'PIP' };
     joints.push({
       id: `${prefix}_PIP_${digit}` as JointId,
-      label: `IFP/PIP ${digit} (mão ${handWord})`,
-      shortLabel: `IFP ${digit}`,
+      label: `${abbreviation.pt}/${abbreviation.en} ${digit} (mão ${handWord})`,
+      shortLabel: `${abbreviation.pt} ${digit}`,
       side,
       group: 'pip',
     });

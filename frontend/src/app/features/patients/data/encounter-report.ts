@@ -617,7 +617,13 @@ function tabelaDeMedicoes(linhas: readonly LinhaMedicao[], temFinal: boolean): C
       margin: [0, 8, 0, 0],
     } satisfies ContentTable,
     {
-      text: 'Temperaturas em °C. Mín, média e máx são da captura de referência.',
+      // O pesquisador, no teste de usabilidade, não soube se o Δ era sobre a mínima, a
+      // média ou a máxima. A coluna é estreita demais para dizer, então a nota diz.
+      text:
+        'Temperaturas em °C. Mín, média e máx são da captura de referência.' +
+        (temFinal
+          ? ' Final é a média na última captura, e Δ é a variação da média (final menos referência).'
+          : ''),
       style: 'nota',
       margin: [0, 4, 0, 0],
     },

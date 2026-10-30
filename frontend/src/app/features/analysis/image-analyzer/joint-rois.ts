@@ -3,7 +3,7 @@
  * `extract_thermal_roi_stats` from `scripts/core.py`.
  *
  * From the 21 MediaPipe hand landmarks, the same 11 joints per hand tracked by
- * the body map (Punho, MCP 1–5, IFP 1–5 — 22 in total for both hands) get a
+ * the body map (Punho, MCP 1–5, IF 1, IFP 2–5 — 22 in total for both hands) get a
  * fixed-size ROI in thermal-matrix space: an ellipse of 27×17 cells for the
  * wrist, a circle of radius 10 for the finger joints, exactly as in the
  * Python pipeline.
@@ -32,7 +32,7 @@ export interface JointRoiDef {
 export const JOINT_ROI_DEFS: readonly JointRoiDef[] = [
   { landmarkId: 0, label: 'Punho' },
   { landmarkId: 2, label: 'MCP 1' },
-  { landmarkId: 3, label: 'IFP 1' },
+  { landmarkId: 3, label: 'IF 1' },
   { landmarkId: 5, label: 'MCP 2' },
   { landmarkId: 6, label: 'IFP 2' },
   { landmarkId: 9, label: 'MCP 3' },
