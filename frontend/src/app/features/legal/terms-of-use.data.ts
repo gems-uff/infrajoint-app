@@ -2,10 +2,10 @@ import { LEGAL_CONTACT_EMAIL } from './legal-contact';
 import { LegalSection } from './legal-document.model';
 
 /** Machine-readable date for the `<time>` element. */
-export const TERMS_OF_USE_LAST_UPDATED_ISO = '2026-09-28';
+export const TERMS_OF_USE_LAST_UPDATED_ISO = '2026-11-02';
 
 /** Human-readable date shown to the user. */
-export const TERMS_OF_USE_LAST_UPDATED = '28 de setembro de 2026';
+export const TERMS_OF_USE_LAST_UPDATED = '2 de novembro de 2026';
 
 /**
  * Content of the terms of use, in the same section format as the privacy
@@ -99,7 +99,7 @@ export const TERMS_OF_USE_SECTIONS: LegalSection[] = [
           },
           {
             label: 'Anonimização',
-            text: 'remover identificadores diretos de pacientes dos arquivos antes de carregá-los, já que a plataforma não exige nenhum dado que identifique o participante.',
+            text: 'remover identificadores diretos de pacientes dos arquivos antes de carregá-los. O cadastro de pacientes exige nome completo e data de nascimento, dados que permitem identificar o participante. Sempre que a pesquisa permitir, use códigos de participante no lugar do nome real, conforme a Política de Privacidade.',
           },
           {
             label: 'Uso lícito',
