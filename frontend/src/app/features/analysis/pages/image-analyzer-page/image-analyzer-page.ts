@@ -122,7 +122,7 @@ const LEFT_ROI_COLOR = '#22d3ee';
 const RIGHT_ROI_COLOR = '#f59e0b';
 
 /** Below this skin coverage a joint ROI is flagged as unreliable. */
-const MIN_SKIN_COVERAGE = 0.35;
+const MIN_SKIN_COVERAGE = 0.4;
 
 /**
  * Web port of the thermal analysis scripts (`scripts/core.py` +
